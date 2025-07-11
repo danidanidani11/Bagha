@@ -16,15 +16,15 @@ threading.Thread(target=run_flask).start()
 
 import telebot, json, os, time, datetime
 from telebot import types
-# راه‌اندازی وب سرور برای Render
+# راه‌اندازی وب سرور برای Render‏import telebot
+‏import json
+‏import os
+‏from telebot import types
 
-# تنظیمات اصلی ربات
-bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
-  # کمی صبر بده تا ارتباط قطع بشه
-
-admin_id = 5542927340
-channel = 'bagha_game'
-tron_address = 'TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb'
+‏bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
+‏admin_id = 5542927340
+‏channel = 'bagha_game'
+‏tron_address = 'TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb'
 
 questions = [
     {
