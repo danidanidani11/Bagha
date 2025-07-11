@@ -20,8 +20,7 @@ from telebot import types
 
 # تنظیمات اصلی ربات
 bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
-bot.remove_webhook()
-time.sleep(1)  # کمی صبر بده تا ارتباط قطع بشه
+  # کمی صبر بده تا ارتباط قطع بشه
 
 admin_id = 5542927340
 channel = 'bagha_game'
