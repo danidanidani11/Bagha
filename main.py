@@ -1,3 +1,21 @@
+import os
+import threading
+from flask import Flask
+
+# راه‌اندازی یک وب سرور ساده برای Render
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return 'Bot is running!'
+
+def run_web():
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
+
+# اجرا در ترد جداگانه
+threading.Thread(target=run_web).start()
+
 import telebot, json, os, time, datetime
 from telebot import types
 
