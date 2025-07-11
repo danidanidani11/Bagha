@@ -21,7 +21,7 @@ import json
 import os
 from telebot import types
 
-bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
+bot = telebot.TeleBot('7412628589:AAGfmTuXsTk8IW5v9JgkiDodK4EUj5zg4Hc')
 admin_id = 5542927340
 channel = 'bagha_game'
 tron_address = 'TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb'
