@@ -17,9 +17,9 @@ threading.Thread(target=run_flask).start()
 import telebot, json, os, time, datetime
 from telebot import types
 # راه‌اندازی وب سرور برای Render‏import telebot
-‏import json
-‏import os
-‏from telebot import types
+import json
+import os
+from telebot import types
 
 ‏bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
 ‏admin_id = 5542927340
