@@ -129,8 +129,8 @@ def handle_menu(m):
   data[uid]["waiting_receipt"]=False
   save(data)
   if u["life"]<=0:
-bot.send_message(m.chat.id, "❤️ تموم شده! لطفاً از فروشگاه جان بخر.")
-return
+      bot.send_message(m.chat.id, "❤️ تموم شده! لطفاً از فروشگاه جان بخر.")
+      return
   if u["step"]>=len(questions):
    u["step"]=0
    save(data)
