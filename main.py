@@ -2,14 +2,13 @@ import os
 import threading
 import telebot, json, os, time, datetime
 from telebot import types
-
-bot.remove_webhook()
-time.sleep(1)  # کمی صبر بده تا ارتباط قطع بشه
-
 # راه‌اندازی وب سرور برای Render
 
 # تنظیمات اصلی ربات
 bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
+bot.remove_webhook()
+time.sleep(1)  # کمی صبر بده تا ارتباط قطع بشه
+
 admin_id = 5542927340
 channel = 'bagha_game'
 tron_address = 'TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb'
