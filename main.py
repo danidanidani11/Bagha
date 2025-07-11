@@ -3,6 +3,9 @@ import threading
 import telebot, json, os, time, datetime
 from telebot import types
 
+bot.remove_webhook()
+time.sleep(1)  # کمی صبر بده تا ارتباط قطع بشه
+
 # راه‌اندازی وب سرور برای Render
 
 # تنظیمات اصلی ربات
