@@ -163,10 +163,15 @@ def buy_life(m):
         bot.send_message(m.chat.id, "❌ شما سکه کافی برای خرید جان ندارید.")
 
 # 💳 ارسال فیش پرداخت (درخواست)
-@bot.message_handler(func=lambda m: m.text == "💳 ارسال فیش پرداخت")
-def ask_payment(m):
-    bot.send_message(m.chat.id, "📸 لطفاً فیش پرداخت را به صورت *عکس* یا *متن* ارسال کن:", reply_markup=types.ForceReply(), parse_mode="Markdown")
-
+@bot.message_handler(content_types=['photo'])
+def handle_photo_payment(m):
+    # بررسی کن که آیا این عکس پاسخ به پیام درخواست فیش است
+    if m.reply_to_message and "فیش پرداخت" in m.reply_to_message.text:
+        file_id = m.photo[-1].file_id
+        caption = f"📥 فیش پرداخت تصویری از {m.from_user.first_name}"
+        bot.send_photo(ADMIN_ID, file_id, caption=caption, reply_markup=payment_markup(m.chat.id))
+    else:
+        bot.send_message(m.chat.id, "❗️ لطفاً عکس فیش را دقیقاً در پاسخ به پیام درخواست فیش ارسال کنید.")
 # 📤 دریافت فیش پرداخت و ارسال برای ادمین
 @bot.message_handler(func=lambda m: m.reply_to_message and "فیش" in m.reply_to_message.text)
 def handle_payment(m):
