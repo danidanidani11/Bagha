@@ -378,7 +378,7 @@ def check_name(m):
     users = load_users()
     return str(m.chat.id) in users and users[str(m.chat.id)]["name"] != ""
 
-def check_membership(user_id):
+def is_member(user_id):
     try:
         status = bot.get_chat_member(CHANNEL_USERNAME, user_id).status
         return status in ['member', 'creator', 'administrator']
