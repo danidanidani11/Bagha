@@ -453,7 +453,7 @@ def start_game(m):
     markup.add("🔙 بازگشت به منو")
     bot.send_message(m.chat.id, q["question"], reply_markup=markup)
 
-@bot.message_handler(func=lambda m: get_user_step(m.chat.id) >= 0)
+@bot.message_handler(func=is_valid_answer)
 def answer_question(m):
     users = load_users()
     user = users[str(m.chat.id)]
