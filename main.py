@@ -635,6 +635,10 @@ def block_if_no_name(m):
     if not check_name(m):
         if m.text != "/start":
             bot.send_message(m.chat.id, "❗️ لطفاً ابتدا نام خود را وارد کنید. /start")
+
+def get_user_step(user_id):
+    users = load_users()
+    return users.get(str(user_id), {}).get("step", -1)
             
 if __name__ == "__main__":
     Thread(target=run).start()
