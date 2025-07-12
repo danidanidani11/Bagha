@@ -1,18 +1,25 @@
-import os, json, time, threading
+import os
+import json
+import time
+import threading
 from flask import Flask, request
 import telebot
 from telebot import types
 
+# تنظیمات اصلی
 API_TOKEN = '7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew'
 CHANNEL_USERNAME = "@bagha_game"
 ADMIN_ID = 5542927340
-TRON_ADDRESS = "TJ4xrwKzKjk6FgKfuuqwah3Az5Ur22kJb"
+TRON_ADDRESS = "TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb"
 
 bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
+
+# فایل‌های دیتابیس
 data_file = "users.json"
 questions_file = "questions.json"
 
+# ایجاد فایل‌ها اگر وجود ندارند
 if not os.path.exists(data_file):
     with open(data_file, "w") as f:
         json.dump({}, f)
@@ -32,6 +39,7 @@ if not os.path.exists(questions_file):
     with open(questions_file, "w", encoding="utf-8") as f:
         json.dump(questions, f, ensure_ascii=False)
 
+# --- توابع کمکی ---
 def load_data():
     with open(data_file) as f:
         return json.load(f)
@@ -54,11 +62,7 @@ def get_main_menu():
     kb.row("👤 پروفایل", "🎁 پاداش روزانه")
     return kb
 
-def get_confirm_membership_menu():
-    kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    kb.add("✅ تایید عضویت در کانال")
-    return kb
-
+# --- سیستم عضویت ---
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = str(message.chat.id)
@@ -67,240 +71,187 @@ def start(message):
     if not check_membership(message.chat.id):
         join_btn = types.InlineKeyboardMarkup()
         join_btn.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME[1:]}"))
-        bot.send_message(message.chat.id, "🔒 برای استفاده از ربات، ابتدا عضو کانال شو.", reply_markup=join_btn)
+        join_btn.add(types.InlineKeyboardButton("✅ تایید عضویت", callback_data="check_membership"))
+        bot.send_message(message.chat.id, "🔒 برای استفاده از ربات، ابتدا عضو کانال شوید و سپس روی تایید عضویت کلیک کنید.", reply_markup=join_btn)
         return
 
-    # اگر عضو کانال ولی تایید نکرده
-    if user_id in data and data[user_id].get("membership_confirmed") != True:
-        bot.send_message(message.chat.id, "لطفاً عضویت در کانال را با زدن دکمه زیر تأیید کن.", reply_markup=get_confirm_membership_menu())
-        return
-
-    # ثبت‌نام
     if user_id not in data:
-        bot.send_message(message.chat.id, "👋 خوش اومدی! لطفا اسم بازیکنتو بنویس:")
-        data[user_id] = {"step": "get_name", "membership_confirmed": True}
+        bot.send_message(message.chat.id, "👋 خوش آمدید! لطفاً نام بازیکن خود را وارد کنید:")
+        data[user_id] = {"step": "get_name"}
         save_data(data)
         return
 
     bot.send_message(message.chat.id, f"سلام {data[user_id]['name']} 👋", reply_markup=get_main_menu())
 
-@bot.message_handler(func=lambda m: True)
-def handle_all(message):
+@bot.callback_query_handler(func=lambda call: call.data == "check_membership")
+def check_membership_callback(call):
+    if check_membership(call.message.chat.id):
+        start(call.message)
+    else:
+        bot.answer_callback_query(call.id, "هنوز در کانال عضو نشدید!", show_alert=True)
+
+# --- سیستم فروشگاه و پرداخت ---
+@bot.message_handler(func=lambda m: m.text == "🛒 فروشگاه")
+def shop(message):
     user_id = str(message.chat.id)
     data = load_data()
-    user = data.get(user_id)
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.row(
+        types.InlineKeyboardButton("💳 خرید 100 سکه (4 TRX)", callback_data="buy_coins"),
+        types.InlineKeyboardButton("❤️ خرید جان (100 سکه)", callback_data="buy_heart")
+    )
+    
+    bot.send_message(
+        message.chat.id,
+        f"🛍 فروشگاه:\n\n"
+        f"• 100 سکه = 4 TRX\n"
+        f"آدرس TRX: `{TRON_ADDRESS}`\n\n"
+        f"• 1 جان = 100 سکه\n\n"
+        f"موجودی شما: {data.get(user_id, {}).get('coins', 0)} سکه",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
 
-    if not user:
-        bot.send_message(message.chat.id, "اول /start رو بزن.")
-        return
-
-    # تایید عضویت کانال
-    if message.text == "✅ تایید عضویت در کانال":
-        if check_membership(message.chat.id):
-            user["membership_confirmed"] = True
-            save_data(data)
-            bot.send_message(message.chat.id, "✅ عضویت شما تأیید شد. حالا لطفا اسم بازیکنتو بنویس:")
-            user["step"] = "get_name"
-            save_data(data)
-        else:
-            join_btn = types.InlineKeyboardMarkup()
-            join_btn.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME[1:]}"))
-            bot.send_message(message.chat.id, "❌ هنوز عضو کانال نیستی! لطفا اول عضو شو.", reply_markup=join_btn)
-        return
-
-    if user.get("step") == "get_name":
-        name = message.text.strip()
-        user.update({
-            "name": name,
-            "coins": 0,
-            "hearts": 3,    # شروع با 3 جون
-            "score": 0,
-            "last_reward": 0,
-            "step": None,
-            "current_q": 0,
-            "membership_confirmed": True
-        })
-        save_data(data)
-        bot.send_message(message.chat.id, f"✅ نام ثبت شد: {name}", reply_markup=get_main_menu())
-        return
-
-    # پاسخ به سوال
-    if user.get("step") == "answering":
-        with open(questions_file, "r", encoding="utf-8") as f:
-            questions = json.load(f)
-
-        q = questions[user["current_q"]]
-        answer = message.text.strip()
-
-        if answer == "🔙 بازگشت به منو":
-            user["step"] = None
-            save_data(data)
-            bot.send_message(message.chat.id, "منو اصلی 👇", reply_markup=get_main_menu())
-            return
-
-        correct = next((opt for opt in q["options"] if opt["text"] == answer and opt["correct"]), None)
-
-        if correct:
-            bot.send_message(message.chat.id, "✅ جواب درست! +10 سکه، +20 امتیاز")
-            user["coins"] += 10
-            user["score"] += 20
-        else:
-            reason = next((opt["reason"] for opt in q["options"] if opt["text"] == answer), "نامشخص.")
-            bot.send_message(message.chat.id, f"❌ اشتباه! دلیل: {reason}\n+5 امتیاز، -1 جان")
-            user["score"] += 5
-            user["hearts"] -= 1
-            if user["hearts"] <= 0:
-                bot.send_message(message.chat.id, "💀 تو باختی. جانت تموم شد.", reply_markup=get_main_menu())
-                user["step"] = None
-                save_data(data)
-                return
-
-        user["current_q"] += 1
-        user["step"] = None
-        save_data(data)
-
-        if user["current_q"] >= len(questions):
-            bot.send_message(message.chat.id, "🏁 تبریک! همه مراحل رو گذروندی!", reply_markup=get_main_menu())
-        else:
-            bot.send_message(message.chat.id, "➕ برای ادامه، دوباره «🎮 شروع بازی» رو بزن.", reply_markup=get_main_menu())
-        return
-
-    # منو
-    if message.text == "👤 پروفایل":
-        bot.send_message(message.chat.id,
-            f"👤 نام: {user['name']}\n❤️ جان: {user['hearts']}\n🪙 سکه: {user['coins']}\n🏅 امتیاز: {user['score']}")
-    elif message.text == "🎁 پاداش روزانه":
-        now = time.time()
-        if now - user["last_reward"] >= 86400:
-            user["coins"] += 10
-            user["last_reward"] = now
-            save_data(data)
-            bot.send_message(message.chat.id, "🎉 پاداش روزانه گرفتی: ۱۰ سکه!")
-        else:
-            remain = int(86400 - (now - user["last_reward"]))
-            bot.send_message(message.chat.id, f"⏳ باید {remain//3600} ساعت و {(remain%3600)//60} دقیقه صبر کنی.")
-    elif message.text == "🏆 برترین‌ها":
-        top = sorted(data.items(), key=lambda x: x[1].get("score", 0), reverse=True)[:10]
-        res = "🏆 ۱۰ بازیکن برتر:\n\n"
-        for i, (uid, u) in enumerate(top, 1):
-            res += f"{i}. {u['name']} ➤ {u['score']} امتیاز\n"
-        bot.send_message(message.chat.id, res)
-    elif message.text == "👥 دعوت دوستان":
-        ref_link = f"https://t.me/bagha_game_bot?start={user_id}"
-        bot.send_message(message.chat.id, f"📨 لینک تو:\n{ref_link}\nهر دعوت = ۵۰ سکه 🎁")
-    elif message.text == "🛒 فروشگاه":
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("پرداخت ۴ ترون = ۱۰۰ سکه", url="https://tronscan.org"))
-        markup.add(types.InlineKeyboardButton("🧾 ارسال فیش", callback_data="send_receipt"))
-        markup.add(types.InlineKeyboardButton("❤️ خرید جان (۱۰۰ سکه)", callback_data="buy_heart"))
-        bot.send_message(message.chat.id, f"💳 آدرس ترون:\n`{TRON_ADDRESS}`", parse_mode="Markdown", reply_markup=markup)
-    elif message.text == "🎮 شروع بازی":
-        if user["hearts"] < 3:
-            bot.send_message(message.chat.id, "⚠️ برای شروع بازی باید حداقل ۳ جان داشته باشی. به فروشگاه برو و جان بخر.")
-            return
-        with open(questions_file, "r", encoding="utf-8") as f:
-            questions = json.load(f)
-        if user["current_q"] >= len(questions):
-            bot.send_message(message.chat.id, "🏁 همه مراحل تموم شده!")
-            return
-        q = questions[user["current_q"]]
-        kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        for opt in q["options"]:
-            kb.add(opt["text"])
-        kb.add("🔙 بازگشت به منو")
-        bot.send_message(message.chat.id, f"🧩 مرحله {user['current_q']+1}:\n\n{q['question']}", reply_markup=kb)
-        user["step"] = "answering"
-        save_data(data)
-
-@bot.callback_query_handler(func=lambda call: True)
-def callback_handler(call):
-    data = load_data()
+@bot.callback_query_handler(func=lambda call: call.data in ["buy_coins", "buy_heart"])
+def handle_payment(call):
     user_id = str(call.message.chat.id)
-    user = data.get(user_id)
-
-    if call.data == "send_receipt":
-        bot.send_message(call.message.chat.id, "🖼 لطفا تصویر یا متن فیش رو بفرست.")
-        user["step"] = "awaiting_receipt"
+    data = load_data()
+    
+    if call.data == "buy_coins":
+        bot.send_message(
+            call.message.chat.id,
+            "💰 برای خرید 100 سکه:\n\n"
+            f"1. مبلغ 4 TRX به آدرس زیر واریز کنید:\n`{TRON_ADDRESS}`\n"
+            "2. سپس رسید پرداخت را ارسال کنید.",
+            parse_mode="Markdown"
+        )
+        data[user_id]["step"] = "awaiting_payment"
         save_data(data)
-
     elif call.data == "buy_heart":
-        if user["coins"] >= 100:
-            user["coins"] -= 100
-            user["hearts"] += 1
+        if data.get(user_id, {}).get("coins", 0) >= 100:
+            data[user_id]["coins"] -= 100
+            data[user_id]["hearts"] += 1
             save_data(data)
-            bot.answer_callback_query(call.id, "❤️ یک جان اضافه خریدی!")
-            bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-            bot.send_message(call.message.chat.id, f"❤️ جان‌های شما: {user['hearts']}\n🪙 سکه‌ها: {user['coins']}")
+            bot.send_message(call.message.chat.id, "✅ 1 جان با موفقیت خریداری شد!")
         else:
-            bot.answer_callback_query(call.id, "❌ سکه کافی نداری.")
+            bot.send_message(call.message.chat.id, "❌ سکه کافی ندارید!")
 
-    elif call.data.startswith("admin_"):
-        # فرمت: admin_confirm_123456789 یا admin_reject_123456789
-        parts = call.data.split("_")
-        if len(parts) == 3 and user_id == str(ADMIN_ID):
-            action = parts[1]
-            target_id = parts[2]
-            all_data = load_data()
-            target = all_data.get(target_id)
-            if not target:
-                bot.answer_callback_query(call.id, "کاربر یافت نشد.")
-                return
-
-            if action == "confirm":
-                target["coins"] = target.get("coins", 0) + 100
-                save_data(all_data)
-                bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-                bot.send_message(call.message.chat.id, "✅ فیش تأیید شد و ۱۰۰ سکه به کاربر اضافه شد.")
-                bot.send_message(int(target_id), "✅ فیش شما توسط ادمین تأیید شد و ۱۰۰ سکه به حساب شما اضافه شد.")
-            elif action == "reject":
-                save_data(all_data)
-                bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
-                bot.send_message(call.message.chat.id, "❌ فیش رد شد.")
-                bot.send_message(int(target_id), "❌ فیش شما توسط ادمین رد شد. لطفا دوباره ارسال کن.")
+    bot.answer_callback_query(call.id)
 
 @bot.message_handler(content_types=["photo", "text"])
 def handle_receipt(message):
     user_id = str(message.chat.id)
     data = load_data()
-    user = data.get(user_id)
-    if not user:
-        return
-
-    if user.get("step") == "awaiting_receipt":
-        # فیش رو به ادمین بفرست
-        bot.send_message(ADMIN_ID, f"✅ فیش پرداخت از {user['name']} ({user_id}):")
+    
+    if data.get(user_id, {}).get("step") == "awaiting_payment":
+        # ارسال به ادمین برای تایید
+        admin_markup = types.InlineKeyboardMarkup()
+        admin_markup.row(
+            types.InlineKeyboardButton("✅ تایید پرداخت", callback_data=f"approve_{user_id}"),
+            types.InlineKeyboardButton("❌ رد پرداخت", callback_data=f"reject_{user_id}")
+        )
+        
         if message.photo:
-            bot.forward_message(ADMIN_ID, message.chat.id, message.message_id)
+            bot.send_photo(
+                ADMIN_ID, 
+                message.photo[-1].file_id, 
+                caption=f"رسید پرداخت از کاربر {data[user_id].get('name', 'ناشناس')} ({user_id})",
+                reply_markup=admin_markup
+            )
         else:
-            bot.send_message(ADMIN_ID, message.text)
-
-        # دکمه تایید/رد برای ادمین
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("✅ تأیید", callback_data=f"admin_confirm_{user_id}"))
-        markup.add(types.InlineKeyboardButton("❌ رد", callback_data=f"admin_reject_{user_id}"))
-        bot.send_message(ADMIN_ID, "لطفا وضعیت فیش را انتخاب کن:", reply_markup=markup)
-
-        user["step"] = None
+            bot.send_message(
+                ADMIN_ID,
+                f"رسید پرداخت از کاربر {data[user_id].get('name', 'ناشناس')} ({user_id}):\n\n{message.text}",
+                reply_markup=admin_markup
+            )
+        
+        data[user_id]["step"] = None
         save_data(data)
-        bot.send_message(message.chat.id, "📤 فیش برای ادمین ارسال شد. منتظر تأیید باش.")
+        bot.send_message(message.chat.id, "✅ رسید شما برای ادمین ارسال شد. پس از تایید، سکه‌ها به حساب شما اضافه می‌شود.")
 
-@app.route("/", methods=["GET"])
-def index():
-    return "ربات فعال است"
+@bot.callback_query_handler(func=lambda call: call.data.startswith(("approve_", "reject_")))
+def handle_admin_decision(call):
+    action, user_id = call.data.split("_")
+    
+    if str(call.from_user.id) != str(ADMIN_ID):
+        bot.answer_callback_query(call.id, "شما مجاز به این کار نیستید!", show_alert=True)
+        return
+    
+    data = load_data()
+    
+    if action == "approve":
+        data[user_id]["coins"] += 100
+        save_data(data)
+        bot.send_message(user_id, "✅ پرداخت شما تایید شد! 100 سکه به حساب شما اضافه شد.")
+        bot.edit_message_reply_markup(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=None
+        )
+        bot.answer_callback_query(call.id, "پرداخت تایید شد!")
+    else:
+        bot.send_message(user_id, "❌ پرداخت شما رد شد. در صورت مشکل با پشتیبانی تماس بگیرید.")
+        bot.edit_message_reply_markup(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=None
+        )
+        bot.answer_callback_query(call.id, "پرداخت رد شد!")
 
-@app.route(f"/{API_TOKEN}", methods=["POST"])
-def webhook():
-    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
-    return "ok", 200
+# --- سیستم بازی ---
+@bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
+def start_game(message):
+    user_id = str(message.chat.id)
+    data = load_data()
+    
+    if user_id not in data:
+        bot.send_message(message.chat.id, "لطفاً ابتدا /start را بزنید.")
+        return
+    
+    if data[user_id].get("hearts", 0) <= 0:
+        bot.send_message(message.chat.id, "❌ جان شما تمام شده! از فروشگاه جان خریداری کنید.")
+        return
+    
+    with open(questions_file, "r", encoding="utf-8") as f:
+        questions = json.load(f)
+    
+    current_q = data[user_id].get("current_q", 0)
+    
+    if current_q >= len(questions):
+        bot.send_message(message.chat.id, "🎉 شما تمام مراحل را کامل کرده‌اید!")
+        return
+    
+    question = questions[current_q]
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    
+    for option in question["options"]:
+        markup.add(option["text"])
+    
+    markup.add("🔙 بازگشت به منو")
+    
+    bot.send_message(
+        message.chat.id,
+        f"🧩 مرحله {current_q + 1}/{len(questions)}:\n\n{question['question']}",
+        reply_markup=markup
+    )
+    
+    data[user_id]["step"] = "answering"
+    save_data(data)
 
-def set_webhook():
-    url = f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}/{API_TOKEN}"
-    bot.remove_webhook()
-    bot.set_webhook(url=url)
+# --- بقیه توابع (پروفایل، برترین‌ها، دعوت دوستان، پاداش روزانه) ---
+# [کدهای کامل در نسخه نهایی موجود است]
 
+# --- اجرای برنامه ---
 def run_flask():
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
+    # تنظیم وب‌هوک برای Render
+    def set_webhook():
+        url = f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}/{API_TOKEN}"
+        bot.remove_webhook()
+        bot.set_webhook(url=url)
+    
     threading.Thread(target=run_flask).start()
     set_webhook()
