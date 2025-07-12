@@ -171,7 +171,7 @@ def handle_photo_payment(m):
         caption = f"📥 فیش پرداخت تصویری از {m.from_user.first_name}"
         bot.send_photo(ADMIN_ID, file_id, caption=caption, reply_markup=payment_markup(m.chat.id))
     else:
-        bot.send_message(m.chat.id, "❗️ لطفاً عکس فیش را دقیقاً در پاسخ به پیام درخواست فیش ارسال کنید.")
+        bot.send_message(m.chat.id, "📸 لطفاً فیش پرداخت را به صورت *عکس* یا *متن* ارسال کن:", reply_markup=types.ForceReply(selective=True), parse_mode="Markdown")
 # 📤 دریافت فیش پرداخت و ارسال برای ادمین
 @bot.message_handler(func=lambda m: m.reply_to_message and "فیش" in m.reply_to_message.text)
 def handle_payment(m):
