@@ -393,42 +393,37 @@ def main_menu():
     return markup
 
 @bot.message_handler(commands=['start'])
-def start(m):
-    users = load_users()
+def handle_start(m):
+    user_id = m.chat.id
 
-    # عضویت اجباری
-    if not check_membership(m.chat.id):
+    # 🛡 عضویت اجباری اول از همه چک میشه
+    if not is_member(m.chat.id):
         markup = types.InlineKeyboardMarkup()
-        btn = types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")
-        markup.add(btn)
-        bot.send_message(m.chat.id, "🔒 برای استفاده از ربات، ابتدا در کانال عضو شوید و سپس دوباره /start را بفرستید:", reply_markup=markup)
+        markup.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"))
+        bot.send_message(user_id, "📛 برای استفاده از ربات ابتدا باید در کانال عضو شوی:", reply_markup=markup)
         return
 
-    # اگه کاربر جدید باشه
-    if str(m.chat.id) not in users:
-        users[str(m.chat.id)] = {
+    users = load_users()
+    if str(user_id) not in users:
+        users[str(user_id)] = {
             "name": "",
-            "coin": 0,
             "life": 3,
+            "coin": 0,
             "score": 0,
             "step": 0,
-            "last_bonus": "0",
-            "ref": 0
+            "last_daily": ""
         }
         save_users(users)
-
-    # ✅ بررسی اینکه اسم وارد کرده یا نه
-    if users[str(m.chat.id)]["name"] == "":
-        bot.send_message(m.chat.id, "👋 لطفاً نام خود را وارد کنید:")
-        bot.register_next_step_handler(m, get_name)
-    else:
-        bot.send_message(m.chat.id, "👋 خوش آمدید!", reply_markup=main_menu())
-        
-def get_name(m):
-    if m.text.startswith("/"):
-        bot.send_message(m.chat.id, "❗️نام نمی‌تواند با / شروع شود. لطفاً فقط نام خود را وارد کنید:")
-        bot.register_next_step_handler(m, get_name)
+        bot.send_message(user_id, "👋 سلام! اول اسمتو بگو:", reply_markup=types.ForceReply())
         return
+
+    # اگه اسمش هنوز ثبت نشده
+    if users[str(user_id)]["name"] == "":
+        bot.send_message(user_id, "📝 لطفاً اول اسمت رو وارد کن:", reply_markup=types.ForceReply())
+        return
+
+    # در نهایت، منو باز میشه
+    show_main_menu(user_id)
     users = load_users()
     users[str(m.chat.id)]["name"] = m.text
     save_users(users)
