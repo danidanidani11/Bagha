@@ -166,7 +166,7 @@ def buy_life(m):
 @bot.message_handler(content_types=['photo'])
 def handle_photo_payment(m):
     # بررسی کن که آیا این عکس پاسخ به پیام درخواست فیش است
-    if m.reply_to_message and "فیش پرداخت" in m.reply_to_message.text:
+    if m.reply_to_message and "فیش" in m.reply_to_message.text and m.text != "💳 ارسال فیش پرداخت":
         file_id = m.photo[-1].file_id
         caption = f"📥 فیش پرداخت تصویری از {m.from_user.first_name}"
         bot.send_photo(ADMIN_ID, file_id, caption=caption, reply_markup=payment_markup(m.chat.id))
