@@ -724,7 +724,7 @@ def handle_text(m):
     txt = m.text
 
     if txt == "🎮 شروع بازی":
-            if u["in_game"] and u["step"] < len(questions):
+                if u["in_game"] and u["step"] < len(questions):
         q = questions[u["step"]]
         if txt == q["a"]:
             bot.send_message(m.chat.id, "✅ جواب درست بود!")
@@ -735,7 +735,7 @@ def handle_text(m):
             u["score"] += 5
             u["life"] -= 1
         else:
-            return  # متن نامربوط ارسال شده، کاری نکن
+            return  # متن نامربوط
 
         u["step"] += 1
         save(data)
