@@ -658,6 +658,19 @@ def send_question(chat_id):
         bot.send_message(chat_id, q["question"], reply_markup=markup)
     else:
         bot.send_message(chat_id, "🎉 شما همه مراحل را با موفقیت پشت سر گذاشتید.")
+
+def is_valid_answer(m):
+    users = load_users()
+    user = users.get(str(m.chat.id))
+    if not user:
+        return False
+
+    step = user.get("step", -1)
+    if step < 0 or step >= len(QUESTIONS):
+        return False
+
+    q = QUESTIONS[step]
+    return m.text.strip() in q["options"]
             
 if __name__ == "__main__":
     Thread(target=run).start()
