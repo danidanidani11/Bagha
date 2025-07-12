@@ -397,14 +397,12 @@ def handle_start(m):
     user_id = m.chat.id
     users = load_users()
 
-    # چک عضویت اجباری
     if not is_member(user_id):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"))
         bot.send_message(user_id, "📛 برای استفاده از ربات، ابتدا باید در کانال عضو شوی:", reply_markup=markup)
         return
 
-    # اگر هنوز تو دیتابیس نبود
     if str(user_id) not in users:
         users[str(user_id)] = {
             "name": "",
@@ -416,17 +414,26 @@ def handle_start(m):
         }
         save_users(users)
 
-    # اگر نام وارد نکرده
     if users[str(user_id)]["name"] == "":
-        bot.send_message(user_id, "👤 لطفاً نام خود را وارد کن:", reply_markup=types.ForceReply(selective=True))
-        return
+        msg = bot.send_message(user_id, "👤 لطفاً **فقط نام واقعی خود** را وارد کنید:", reply_markup=types.ForceReply(selective=True))
+        bot.register_next_step_handler(msg, process_name)  # منتظر پاسخ بعدی کاربر
+    else:
+        bot.send_message(user_id, f"🔹 سلام {users[str(user_id)]['name']}! منوی اصلی:", reply_markup=main_menu())
 
-    # نمایش منو در صورتی که اسم قبلاً ثبت شده
-    show_main_menu(user_id)
+def process_name(m):
+    user_id = m.chat.id
     users = load_users()
-    users[str(m.chat.id)]["name"] = m.text
+    
+    # اگر پیام دریافتی نامعتبر باشد (مثلاً عکس یا فایل)
+    if not m.text or len(m.text.strip()) < 2:  # نام کمتر از ۲ حرف نامعتبر است
+        msg = bot.send_message(user_id, "❌ نام وارد شده معتبر نیست!\nلطفاً **فقط نام واقعی خود** را بنویسید:")
+        bot.register_next_step_handler(msg, process_name)  # دوباره درخواست نام
+        return
+    
+    # ذخیره نام و نمایش منو
+    users[str(user_id)]["name"] = m.text.strip()
     save_users(users)
-    bot.send_message(m.chat.id, f"✅ به بازی بقا خوش آمدی {m.text}!", reply_markup=main_menu())
+    bot.send_message(user_id, f"✅ ثبت نام موفق!\nسلام {m.text}!", reply_markup=main_menu())
 
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
