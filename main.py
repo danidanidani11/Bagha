@@ -4,6 +4,7 @@ from telebot import types
 from threading import Thread
 
 API_TOKEN = '7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew'
+bot = telebot.TeleBot(API_TOKEN)
 bot.set_my_commands([
     telebot.types.BotCommand("start", "شروع ربات"),
 ])
@@ -11,7 +12,6 @@ CHANNEL_USERNAME = "@bagha_game"
 ADMIN_ID = 5542927340
 TRON_ADDRESS = "TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb"
 
-bot = telebot.TeleBot(API_TOKEN)
 app = Flask(__name__)
 
 DATA_FILE = "users.json"
