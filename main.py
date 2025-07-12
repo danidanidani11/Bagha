@@ -59,20 +59,31 @@ def main_menu():
 @bot.message_handler(commands=['start'])
 def start(m):
     users = load_users()
+
+    # ✅ عضویت اجباری در کانال
+    if not check_membership(m.chat.id):
+        markup = types.InlineKeyboardMarkup()
+        btn = types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")
+        markup.add(btn)
+        bot.send_message(m.chat.id, "🔒 برای استفاده از ربات، ابتدا در کانال زیر عضو شوید و سپس دوباره /start را بفرستید:", reply_markup=markup)
+        return
+
+    # ✅ ثبت کاربر و گرفتن اسم
     if str(m.chat.id) not in users:
-        if not check_membership(m.chat.id):
-            markup = types.InlineKeyboardMarkup()
-            btn = types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")
-            markup.add(btn)
-            bot.send_message(m.chat.id, "🔒 برای استفاده از ربات، ابتدا در کانال عضو شوید.", reply_markup=markup)
-            return
-        users[str(m.chat.id)] = {"name": "", "coin": 0, "life": 3, "score": 0, "step": 0, "last_bonus": "0", "ref": 0}
+        users[str(m.chat.id)] = {
+            "name": "",
+            "coin": 0,
+            "life": 3,
+            "score": 0,
+            "step": 0,
+            "last_bonus": "0",
+            "ref": 0
+        }
         save_users(users)
-        bot.send_message(m.chat.id, "👋 سلام! لطفا نام خود را وارد کنید:")
+        bot.send_message(m.chat.id, "👋 سلام! لطفاً نام خود را وارد کنید:")
         bot.register_next_step_handler(m, get_name)
     else:
         bot.send_message(m.chat.id, "👋 خوش آمدید!", reply_markup=main_menu())
-
 def get_name(m):
     users = load_users()
     users[str(m.chat.id)]["name"] = m.text
