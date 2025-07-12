@@ -646,6 +646,20 @@ def block_if_no_name(m):
 def get_user_step(user_id):
     users = load_users()
     return users.get(str(user_id), {}).get("step", -1)
+
+def send_question(chat_id):
+    users = load_users()
+    user = users[str(chat_id)]
+    step = user["step"]
+
+    if step < len(QUESTIONS):
+        q = QUESTIONS[step]
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        for opt in q["options"]:
+            markup.add(opt)
+        bot.send_message(chat_id, q["question"], reply_markup=markup)
+    else:
+        bot.send_message(chat_id, "🎉 شما همه مراحل را با موفقیت پشت سر گذاشتید.")
             
 if __name__ == "__main__":
     Thread(target=run).start()
