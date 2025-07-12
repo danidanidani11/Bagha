@@ -452,24 +452,51 @@ def start_game(m):
     markup.add("🔙 بازگشت به منو")
     bot.send_message(m.chat.id, q["question"], reply_markup=markup)
 
-@bot.message_handler(func=lambda m: m.text.startswith(tuple(str(i+1) for i in range(4))))
+@bot.message_handler(func=lambda m: get_user_step(m.chat.id) >= 0)
 def answer_question(m):
     users = load_users()
-    u = users[str(m.chat.id)]
-    if u["step"] >= len(QUESTIONS):
+    user = users[str(m.chat.id)]
+    step = user["step"]
+
+    if step >= len(questions):
+        bot.send_message(m.chat.id, "🎉 شما قبلاً همه سؤالات را پاسخ داده‌اید.")
         return
-    q = QUESTIONS[u["step"]]
-    selected = int(m.text.split("-")[0].strip()) - 1
-    if selected == q["answer"]:
-        u["coin"] += 10
-        u["score"] += 20
-        bot.send_message(m.chat.id, "✅ درست بود! ۱۰ سکه و ۲۰ امتیاز گرفتی.")
+
+    q = questions[step]
+    options = q["options"]
+    explanations = q["explanations"]
+    correct_index = q["answer"]
+
+    try:
+        selected_index = options.index(m.text.strip())
+    except ValueError:
+        bot.send_message(m.chat.id, "❗️گزینه نامعتبر است. لطفاً یکی از گزینه‌های پیشنهادی را انتخاب کنید.")
+        return
+
+    if selected_index == correct_index:
+        user["coin"] += 10
+        user["score"] += 20
+        result = f"✅ درست گفتی!\n\n📘 توضیح: {explanations[selected_index]}"
     else:
-        u["score"] += 5
-        bot.send_message(m.chat.id, f"❌ اشتباه بود. دلیل: {q['explanation']}")
-    u["step"] += 1
+        user["score"] += 5
+        result = f"❌ جواب اشتباه بود!\n\n📘 دلیل انتخابت:\n{explanations[selected_index]}"
+
+    # اضافه کردن توضیح کامل همه گزینه‌ها
+    all_expl = "\n\n📖 بررسی تمام گزینه‌ها:\n"
+    for i, opt in enumerate(options):
+        prefix = "✅" if i == correct_index else "🔸"
+        all_expl += f"{prefix} {opt}: {explanations[i]}\n"
+
+    bot.send_message(m.chat.id, result + all_expl)
+
+    # رفتن به مرحله بعد
+    user["step"] += 1
     save_users(users)
-    start_game(m)
+
+    if user["step"] < len(questions):
+        send_question(m.chat.id)
+    else:
+        bot.send_message(m.chat.id, "🏁 همه مراحل به پایان رسید. منتظر آپدیت‌های بعدی باش!")
 
 @bot.message_handler(func=lambda m: m.text == "🔙 بازگشت به منو")
 def back_to_menu(m):
