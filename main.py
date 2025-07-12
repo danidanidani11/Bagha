@@ -269,5 +269,11 @@ def set_webhook():
     bot.remove_webhook()
     bot.set_webhook(url=f"https://bagha-2qv0.onrender.com/{API_TOKEN}")  # 🔁 آدرس دقیق Render
 
+@bot.message_handler(func=lambda m: True)
+def block_if_no_name(m):
+    if not check_name(m):
+        if m.text != "/start":
+            bot.send_message(m.chat.id, "❗️ لطفاً ابتدا نام خود را وارد کنید. /start")
+            
 if __name__ == "__main__":
     Thread(target=run).start()
