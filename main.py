@@ -604,17 +604,38 @@ def profile(m):
 @bot.message_handler(func=lambda m: m.text == "🎁 پاداش روزانه")
 def daily_bonus(m):
     users = load_users()
-    u = users[str(m.chat.id)]
-    last = datetime.datetime.strptime(u["last_bonus"], "%Y-%m-%d") if u["last_bonus"] != "0" else datetime.datetime.min
+    user_id = str(m.chat.id)
+    
+    # اگر کاربر وجود نداشته باشد
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❌ خطا در یافتن اطلاعات کاربر. لطفاً با /start مجدداً شروع کنید.")
+        return
+    
+    user = users[user_id]
+    
+    # مقداردهی اولیه اگر last_bonus وجود نداشته باشد
+    if "last_bonus" not in user or not user["last_bonus"]:
+        user["last_bonus"] = "2000-01-01"  # یک تاریخ قدیمی برای دریافت اولین پاداش
+    
+    try:
+        last = datetime.datetime.strptime(user["last_bonus"], "%Y-%m-%d")
+    except ValueError:
+        # اگر فرمت تاریخ اشتباه باشد
+        last = datetime.datetime.min
+        user["last_bonus"] = "2000-01-01"
+    
     now = datetime.datetime.now()
-    if (now - last).days >= 1:
-        u["coin"] += 10
-        u["last_bonus"] = now.strftime("%Y-%m-%d")
-        save_users(users)
-        bot.send_message(m.chat.id, "🎉 ۱۰ سکه پاداش گرفتی!")
+    
+    # محاسبه تفاوت روزها
+    delta = now - last
+    if delta.days >= 1:
+        user["coin"] += 10
+        user["last_bonus"] = now.strftime("%Y-%m-%d")
+        save_users(users)  # ذخیره تغییرات
+        bot.send_message(m.chat.id, "🎉 ۱۰ سکه پاداش روزانه دریافت کردید!")
     else:
-        bot.send_message(m.chat.id, "⏳ پاداش روزانه‌ات رو قبلا گرفتی. فردا بیا!")
-
+        remaining_hours = 24 - (delta.seconds // 3600)
+        bot.send_message(m.chat.id, f"⏳ شما امروز уже پاداش گرفته‌اید. {remaining_hours} ساعت دیگر می‌توانید پاداش بعدی را دریافت کنید.")
 # 🧑‍🤝‍🧑 دعوت
 @bot.message_handler(func=lambda m: m.text == "🧑‍🤝‍🧑 دعوت دوستان")
 def invite(m):
