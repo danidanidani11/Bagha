@@ -66,7 +66,7 @@ def start(m):
             markup.add(btn)
             bot.send_message(m.chat.id, "🔒 برای استفاده از ربات، ابتدا در کانال عضو شوید.", reply_markup=markup)
             return
-        users[str(m.chat.id)] = {"name": "", "coin": 0, "life": 1, "score": 0, "step": 0, "last_bonus": "0", "ref": 0}
+        users[str(m.chat.id)] = {"name": "", "coin": 0, "life": 3, "score": 0, "step": 0, "last_bonus": "0", "ref": 0}
         save_users(users)
         bot.send_message(m.chat.id, "👋 سلام! لطفا نام خود را وارد کنید:")
         bot.register_next_step_handler(m, get_name)
