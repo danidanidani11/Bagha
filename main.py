@@ -399,7 +399,7 @@ def handle_start(m):
 
     if not is_member(user_id):
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{bagha_game.lstrip('@')}"))
+        markup.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"))
         bot.send_message(user_id, "📛 برای استفاده از ربات، ابتدا باید در کانال عضو شوی:", reply_markup=markup)
         return
 
