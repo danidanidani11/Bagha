@@ -147,7 +147,6 @@ def shop(m):
 """
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     markup.add("🧡 خرید جان (۱۰۰ سکه)", "🔙 بازگشت به منو")
-    markup.add("💳 ارسال فیش پرداخت")
     bot.send_message(m.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
 # ❤️ خرید جان با ۱۰۰ سکه
