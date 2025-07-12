@@ -724,12 +724,36 @@ def handle_text(m):
     txt = m.text
 
     if txt == "🎮 شروع بازی":
-        if u["life"] <= 0:
-            return bot.send_message(m.chat.id, "❤️ جان‌هات تموم شده! لطفاً از فروشگاه جان بخر.")
-        if u["step"] >= len(questions):
-            u["step"] = 0
-        send_question(m.chat.id, u["step"])
+            if u["in_game"] and u["step"] < len(questions):
+        q = questions[u["step"]]
+        if txt == q["a"]:
+            bot.send_message(m.chat.id, "✅ جواب درست بود!")
+            u["coins"] += 10
+            u["score"] += 20
+        elif txt in q["o"]:
+            bot.send_message(m.chat.id, f"❌ جواب اشتباه بود!\nدرست بود: {q['a']}")
+            u["score"] += 5
+            u["life"] -= 1
+        else:
+            return  # متن نامربوط ارسال شده، کاری نکن
+
+        u["step"] += 1
         save(data)
+
+        if u["life"] <= 0:
+            bot.send_message(m.chat.id, "💔 جان‌هات تموم شد! برای ادامه از فروشگاه جان بخر.")
+            u["in_game"] = False
+            save(data)
+            return
+
+        if u["step"] >= len(questions):
+            bot.send_message(m.chat.id, "🎉 همه سوالات تموم شد! دوباره بازی رو شروع کن.")
+            u["step"] = 0
+            u["in_game"] = False
+            save(data)
+            return
+
+        send_question(m.chat.id, u["step"])
         return
 
     if u["in_game"] and u["step"] < len(questions) and txt in questions[u["step"]]["o"]:
