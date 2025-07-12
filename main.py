@@ -787,5 +787,4 @@ def create_admin_markup(user_id):
 # ... (بقیه توابع مانند قبل شامل ask_name, save_name, main_menu, send_question, handle_text)
 
 if __name__ == '__main__':
-    print("Bot is running...")
-    bot.infinity_polling()
+    bot.infinity_polling(skip_pending=True) # این خط رو اضافه کن
