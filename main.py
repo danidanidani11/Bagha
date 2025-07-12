@@ -64,15 +64,15 @@ def main_menu():
 def start(m):
     users = load_users()
 
-    # ✅ عضویت اجباری در کانال
+    # عضویت اجباری
     if not check_membership(m.chat.id):
         markup = types.InlineKeyboardMarkup()
         btn = types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")
         markup.add(btn)
-        bot.send_message(m.chat.id, "🔒 برای استفاده از ربات، ابتدا در کانال زیر عضو شوید و سپس دوباره /start را بفرستید:", reply_markup=markup)
+        bot.send_message(m.chat.id, "🔒 برای استفاده از ربات، ابتدا در کانال عضو شوید و سپس دوباره /start را بفرستید:", reply_markup=markup)
         return
 
-    # ✅ ثبت کاربر و گرفتن اسم
+    # اگه کاربر جدید باشه
     if str(m.chat.id) not in users:
         users[str(m.chat.id)] = {
             "name": "",
@@ -84,10 +84,14 @@ def start(m):
             "ref": 0
         }
         save_users(users)
-        bot.send_message(m.chat.id, "👋 سلام! لطفاً نام خود را وارد کنید:")
+
+    # ✅ بررسی اینکه اسم وارد کرده یا نه
+    if users[str(m.chat.id)]["name"] == "":
+        bot.send_message(m.chat.id, "👋 لطفاً نام خود را وارد کنید:")
         bot.register_next_step_handler(m, get_name)
     else:
         bot.send_message(m.chat.id, "👋 خوش آمدید!", reply_markup=main_menu())
+        
 def get_name(m):
     users = load_users()
     users[str(m.chat.id)]["name"] = m.text
