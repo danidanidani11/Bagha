@@ -459,11 +459,11 @@ def answer_question(m):
     user = users[str(m.chat.id)]
     step = user["step"]
 
-    if step >= len(questions):
+    if step >= len(QUESTIONS):
         bot.send_message(m.chat.id, "🎉 شما قبلاً همه سؤالات را پاسخ داده‌اید.")
         return
 
-    q = questions[step]
+    q = QUESTIONS[step]
     options = q["options"]
     explanations = q["explanations"]
     correct_index = q["answer"]
@@ -471,7 +471,7 @@ def answer_question(m):
     try:
         selected_index = options.index(m.text.strip())
     except ValueError:
-        bot.send_message(m.chat.id, "❗️گزینه نامعتبر است. لطفاً یکی از گزینه‌های پیشنهادی را انتخاب کنید.")
+        bot.send_message(m.chat.id, "❗️گزینه نامعتبر است. لطفاً یکی از گزینه‌های پیشنهادی را انتخاب کن.")
         return
 
     if selected_index == correct_index:
@@ -482,7 +482,6 @@ def answer_question(m):
         user["score"] += 5
         result = f"❌ جواب اشتباه بود!\n\n📘 دلیل انتخابت:\n{explanations[selected_index]}"
 
-    # اضافه کردن توضیح کامل همه گزینه‌ها
     all_expl = "\n\n📖 بررسی تمام گزینه‌ها:\n"
     for i, opt in enumerate(options):
         prefix = "✅" if i == correct_index else "🔸"
@@ -490,11 +489,10 @@ def answer_question(m):
 
     bot.send_message(m.chat.id, result + all_expl)
 
-    # رفتن به مرحله بعد
     user["step"] += 1
     save_users(users)
 
-    if user["step"] < len(questions):
+    if user["step"] < len(QUESTIONS):
         send_question(m.chat.id)
     else:
         bot.send_message(m.chat.id, "🏁 همه مراحل به پایان رسید. منتظر آپدیت‌های بعدی باش!")
