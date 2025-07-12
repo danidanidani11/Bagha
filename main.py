@@ -21,7 +21,7 @@ import json
 import os
 from telebot import types
 
-bot = telebot.TeleBot('7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew')
+bot = telebot.TeleBot('7412628589:AAGfmTuXsTk8IW5v9JgkiDodK4EUj5zg4Hc')
 bot.remove_webhook()
 admin_id = 5542927340
 channel = 'bagha_game'
