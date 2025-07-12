@@ -173,7 +173,7 @@ def handle_photo_payment(m):
     else:
         bot.send_message(m.chat.id, "📸 لطفاً فیش پرداخت را به صورت *عکس* یا *متن* ارسال کن:", reply_markup=types.ForceReply(selective=True), parse_mode="Markdown")
 # 📤 دریافت فیش پرداخت و ارسال برای ادمین
-@bot.message_handler(func=lambda m: m.reply_to_message and "فیش" in m.reply_to_message.text)
+@bot.message_handler(func=lambda m: m.text == "💳 ارسال فیش پرداخت")
 def handle_payment(m):
     msg = f"📥 فیش پرداخت جدید از {m.from_user.first_name}:\n\n"
     if m.content_type == "photo":
