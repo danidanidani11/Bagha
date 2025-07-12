@@ -395,15 +395,16 @@ def main_menu():
 @bot.message_handler(commands=['start'])
 def handle_start(m):
     user_id = m.chat.id
+    users = load_users()
 
-    # 🛡 عضویت اجباری اول از همه چک میشه
-    if not is_member(m.chat.id):
+    # چک عضویت اجباری
+    if not is_member(user_id):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"))
-        bot.send_message(user_id, "📛 برای استفاده از ربات ابتدا باید در کانال عضو شوی:", reply_markup=markup)
+        bot.send_message(user_id, "📛 برای استفاده از ربات، ابتدا باید در کانال عضو شوی:", reply_markup=markup)
         return
 
-    users = load_users()
+    # اگر هنوز تو دیتابیس نبود
     if str(user_id) not in users:
         users[str(user_id)] = {
             "name": "",
@@ -414,15 +415,13 @@ def handle_start(m):
             "last_daily": ""
         }
         save_users(users)
-        bot.send_message(user_id, "👋 سلام! اول اسمتو بگو:", reply_markup=types.ForceReply())
-        return
 
-    # اگه اسمش هنوز ثبت نشده
+    # اگر نام وارد نکرده
     if users[str(user_id)]["name"] == "":
-        bot.send_message(user_id, "📝 لطفاً اول اسمت رو وارد کن:", reply_markup=types.ForceReply())
+        bot.send_message(user_id, "👤 لطفاً نام خود را وارد کن:", reply_markup=types.ForceReply(selective=True))
         return
 
-    # در نهایت، منو باز میشه
+    # نمایش منو در صورتی که اسم قبلاً ثبت شده
     show_main_menu(user_id)
     users = load_users()
     users[str(m.chat.id)]["name"] = m.text
