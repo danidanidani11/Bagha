@@ -120,43 +120,74 @@ def answer_question(m):
 def back_to_menu(m):
     bot.send_message(m.chat.id, "↩️ بازگشت به منو", reply_markup=main_menu())
 
-# 🛒 فروشگاه
+# 🛒 فروشگاه - منو
 @bot.message_handler(func=lambda m: m.text == "🛒 فروشگاه")
 def shop(m):
     msg = f"""🛒 فروشگاه:
 
-💰 قیمت ۱۰۰ سکه = ۴ ترون
+💰 قیمت ۱۰۰ سکه = ۴ ترون  
 💳 آدرس ترون: `{TRON_ADDRESS}`
 
-پس از پرداخت، فیش را ارسال کنید.
+✅ پس از پرداخت، فیش را ارسال کنید (عکس یا متن).
+
+📍 همچنین می‌توانید با ۱۰۰ سکه، ۱ ❤️ جان بخرید:
+برای خرید جان، گزینه زیر را انتخاب کنید:
 """
-    markup = types.ForceReply()
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add("🧡 خرید جان (۱۰۰ سکه)", "🔙 بازگشت به منو")
+    markup.add("💳 ارسال فیش پرداخت")
     bot.send_message(m.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
-@bot.message_handler(func=lambda m: m.reply_to_message and "فروشگاه" in m.reply_to_message.text)
-def handle_payment(m):
+# ❤️ خرید جان با ۱۰۰ سکه
+@bot.message_handler(func=lambda m: m.text == "🧡 خرید جان (۱۰۰ سکه)")
+def buy_life(m):
     users = load_users()
-    bot.send_message(ADMIN_ID, f"📥 کاربر {m.from_user.first_name} پرداخت کرده:\n\n{m.text}", reply_markup=payment_markup(m.chat.id))
+    u = users[str(m.chat.id)]
+    if u["coin"] >= 100:
+        u["coin"] -= 100
+        u["life"] += 1
+        save_users(users)
+        bot.send_message(m.chat.id, "🧡 یک جان با موفقیت خریداری شد! ❤️")
+    else:
+        bot.send_message(m.chat.id, "❌ شما سکه کافی برای خرید جان ندارید.")
 
+# 💳 ارسال فیش پرداخت (درخواست)
+@bot.message_handler(func=lambda m: m.text == "💳 ارسال فیش پرداخت")
+def ask_payment(m):
+    bot.send_message(m.chat.id, "📸 لطفاً فیش پرداخت را به صورت *عکس* یا *متن* ارسال کن:", reply_markup=types.ForceReply(), parse_mode="Markdown")
+
+# 📤 دریافت فیش پرداخت و ارسال برای ادمین
+@bot.message_handler(func=lambda m: m.reply_to_message and "فیش" in m.reply_to_message.text)
+def handle_payment(m):
+    msg = f"📥 فیش پرداخت جدید از {m.from_user.first_name}:\n\n"
+    if m.content_type == "photo":
+        file_id = m.photo[-1].file_id
+        bot.send_photo(ADMIN_ID, file_id, caption=msg + "(فیش تصویری)", reply_markup=payment_markup(m.chat.id))
+    else:
+        bot.send_message(ADMIN_ID, msg + m.text, reply_markup=payment_markup(m.chat.id))
+
+# ✅ دکمه‌های تایید / رد برای ادمین
 def payment_markup(user_id):
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("✅ تایید", callback_data=f"approve_{user_id}"))
     markup.add(types.InlineKeyboardButton("❌ رد", callback_data=f"reject_{user_id}"))
     return markup
 
+# ✅ تایید پرداخت توسط ادمین
 @bot.callback_query_handler(func=lambda call: call.data.startswith("approve_"))
 def approve_payment(call):
     user_id = call.data.split("_")[1]
     users = load_users()
     users[user_id]["coin"] += 100
     save_users(users)
-    bot.send_message(int(user_id), "✅ پرداخت شما تایید شد! ۱۰۰ سکه اضافه شد.")
+    bot.send_message(int(user_id), "✅ پرداخت شما تایید شد! ۱۰۰ سکه به حساب شما اضافه شد.")
     bot.answer_callback_query(call.id, "پرداخت تایید شد.")
 
+# ❌ رد پرداخت توسط ادمین با پیام دقیق‌تر
 @bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
 def reject_payment(call):
     user_id = call.data.split("_")[1]
-    bot.send_message(int(user_id), "❌ پرداخت شما رد شد.")
+    bot.send_message(int(user_id), "❌ رسید پرداخت شما توسط ادمین رد شد.\nلطفاً بررسی و در صورت نیاز، مجدداً ارسال کنید.")
     bot.answer_callback_query(call.id, "رد شد.")
 
 # 👤 پروفایل
