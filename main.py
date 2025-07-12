@@ -93,6 +93,10 @@ def start(m):
         bot.send_message(m.chat.id, "👋 خوش آمدید!", reply_markup=main_menu())
         
 def get_name(m):
+    if m.text.startswith("/"):
+        bot.send_message(m.chat.id, "❗️نام نمی‌تواند با / شروع شود. لطفاً فقط نام خود را وارد کنید:")
+        bot.register_next_step_handler(m, get_name)
+        return
     users = load_users()
     users[str(m.chat.id)]["name"] = m.text
     save_users(users)
