@@ -392,6 +392,23 @@ def main_menu():
     markup.add("👤 پروفایل", "🎁 پاداش روزانه")
     return markup
 
+def process_name(m):
+    user_id = str(m.chat.id)
+    users = load_users()
+    
+    # بررسی اینکه آیا پیام دریافتی متن است و حداقل 2 حرف دارد
+    if not m.text or len(m.text.strip()) < 2:
+        msg = bot.send_message(user_id, "❌ نام وارد شده معتبر نیست! لطفاً یک نام واقعی (حداقل 2 حرف) وارد کنید:")
+        bot.register_next_step_handler(msg, process_name)  # دوباره درخواست نام
+        return
+    
+    # ذخیره نام کاربر
+    users[user_id]["name"] = m.text.strip()
+    save_users(users)
+    
+    # ارسال پیام تأیید و نمایش منوی اصلی
+    bot.send_message(user_id, f"✅ ثبت نام موفق! سلام {m.text.strip()}!", reply_markup=main_menu())
+
 @bot.message_handler(commands=['start'])
 def handle_start(m):
     user_id = str(m.chat.id)
