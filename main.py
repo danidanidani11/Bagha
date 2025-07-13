@@ -437,10 +437,9 @@ def handle_start(m):
     if not users[user_id]["name"]:
         msg = bot.send_message(user_id, "👤 لطفاً نام واقعی خود را وارد کنید (حداقل 2 حرف):", 
                              reply_markup=types.ForceReply(selective=True))
-        bot.register_next_step_handler(msg, process_name)
+        bot.register_next_step_handler(msg, process_name)  # اینجا تابع process_name فراخوانی می‌شود
     else:
-        bot.send_message(user_id, f"🔹 سلام {users[user_id]['name']}! به منوی اصلی خوش آمدید.", 
-                        reply_markup=main_menu())
+        bot.send_message(user_id, f"🔹 سلام {users[user_id]['name']}!", reply_markup=main_menu())
 
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
