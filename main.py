@@ -377,7 +377,14 @@ def load_users():
 def check_name(m):
     users = load_users()
     user_id = str(m.chat.id)
+    
+    # اگر پیام /start بود، اجازه دهید پردازش شود
+    if m.text and m.text.startswith('/start'):
+        return True
+    
+    # بررسی وجود کاربر و نام
     return user_id in users and "name" in users[user_id] and users[user_id]["name"].strip() != ""
+    
 def is_member(user_id):
     try:
         status = bot.get_chat_member(CHANNEL_USERNAME, user_id).status
