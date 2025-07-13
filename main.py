@@ -730,6 +730,20 @@ def is_valid_answer(m):
     q = QUESTIONS[step]
     # بررسی آیا متن پیام با یکی از گزینه‌ها مطابقت دارد
     return any(m.text.strip() == opt for opt in q["options"])
+
+@bot.message_handler(func=lambda m: True)
+def handle_all_messages(m):
+    # اجازه پردازش /start در هر حالت
+    if m.text and m.text.startswith('/start'):
+        return
+        
+    # بررسی ثبت نام کاربر
+    if not check_name(m):
+        bot.send_message(m.chat.id, "❗️ لطفاً ابتدا با دستور /start ثبت نام کنید.")
+        return
+        
+    # اگر کاربر ثبت نام کرده است، پیام را پردازش کن
+    # ... (بقیه کدهای پردازش پیام)
             
 if __name__ == "__main__":
     Thread(target=run).start()
