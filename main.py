@@ -487,7 +487,7 @@ def answer_question(m):
     user = users[str(m.chat.id)]
     step = user["step"]
 
-    q = questions[step]
+    q = QUESTIONS[step]
     options = q["options"]
     explanations = q["explanations"]
     correct_index = q["answer"]
@@ -512,7 +512,7 @@ def answer_question(m):
     user["step"] += 1
     save_users(users)
 
-    if user["step"] < len(questions):
+    if user["step"] < len(QUESTIONS):
         send_question(m.chat.id)
     else:
         bot.send_message(m.chat.id, "🏁 تمام مراحل به پایان رسید!")
