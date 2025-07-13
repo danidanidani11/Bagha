@@ -606,36 +606,36 @@ def daily_bonus(m):
     users = load_users()
     user_id = str(m.chat.id)
     
-    # اگر کاربر وجود نداشته باشد
     if user_id not in users:
         bot.send_message(m.chat.id, "❌ خطا در یافتن اطلاعات کاربر. لطفاً با /start مجدداً شروع کنید.")
         return
     
     user = users[user_id]
-    
-    # مقداردهی اولیه اگر last_bonus وجود نداشته باشد
-    if "last_bonus" not in user or not user["last_bonus"]:
-        user["last_bonus"] = "2000-01-01"  # یک تاریخ قدیمی برای دریافت اولین پاداش
-    
-    try:
-        last = datetime.datetime.strptime(user["last_bonus"], "%Y-%m-%d")
-    except ValueError:
-        # اگر فرمت تاریخ اشتباه باشد
-        last = datetime.datetime.min
-        user["last_bonus"] = "2000-01-01"
-    
     now = datetime.datetime.now()
     
-    # محاسبه تفاوت روزها
+    # اگر last_bonus وجود ندارد یا خالی است
+    if "last_bonus" not in user or not user["last_bonus"]:
+        user["last_bonus"] = "2000-01-01 00:00:00"
+    
+    try:
+        last = datetime.datetime.strptime(user["last_bonus"], "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        last = datetime.datetime.min
+        user["last_bonus"] = "2000-01-01 00:00:00"
+    
     delta = now - last
-    if delta.days >= 1:
+    
+    # تغییر به 12 ساعت (43200 ثانیه)
+    if delta.total_seconds() >= 43200:
         user["coin"] += 10
-        user["last_bonus"] = now.strftime("%Y-%m-%d")
-        save_users(users)  # ذخیره تغییرات
-        bot.send_message(m.chat.id, "🎉 ۱۰ سکه پاداش روزانه دریافت کردید!")
+        user["last_bonus"] = now.strftime("%Y-%m-%d %H:%M:%S")
+        save_users(users)
+        bot.send_message(m.chat.id, "🎉 ۱۰ سکه پاداش دریافت کردید!")
     else:
-        remaining_hours = 24 - (delta.seconds // 3600)
-        bot.send_message(m.chat.id, f"⏳ شما امروز уже پاداش گرفته‌اید. {remaining_hours} ساعت دیگر می‌توانید پاداش بعدی را دریافت کنید.")
+        remaining = 43200 - delta.total_seconds()
+        hours = int(remaining // 3600)
+        minutes = int((remaining % 3600) // 60)
+        bot.send_message(m.chat.id, f"⏳ باید {hours} ساعت و {minutes} دقیقه دیگر صبر کنید.")
 # 🧑‍🤝‍🧑 دعوت
 @bot.message_handler(func=lambda m: m.text == "🧑‍🤝‍🧑 دعوت دوستان")
 def invite(m):
