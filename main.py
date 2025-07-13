@@ -468,16 +468,20 @@ def start_game(m):
 
 def is_valid_answer(m):
     users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
+    user_id = str(m.chat.id)
+    
+    if user_id not in users:
         return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(QUESTIONS):
+        
+    user = users[user_id]
+    step = user.get("step", 0)
+    
+    if step >= len(QUESTIONS):
         return False
-
+    
     q = QUESTIONS[step]
-    return m.text.strip() in q["options"]
+    # بررسی تطابق دقیق متن پیام با گزینه‌ها (با حذف فاصله‌های اضافی)
+    return any(m.text.strip() == opt.strip() for opt in q["options"])
 
 @bot.message_handler(func=is_valid_answer)
 def answer_question(m):
