@@ -710,18 +710,26 @@ def get_user_step(user_id):
 
 def send_question(chat_id):
     users = load_users()
-    user = users[str(chat_id)]
+    user_id = str(chat_id)
+    
+    if user_id not in users:
+        return
+        
+    user = users[user_id]
     step = user["step"]
-
+    
     if step < len(QUESTIONS):
         q = QUESTIONS[step]
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        for opt in q["options"]:
-            markup.add(opt)
+        
+        # اضافه کردن گزینه‌ها با شماره
+        for i, opt in enumerate(q["options"]):
+            markup.add(f"{i+1}. {opt}")
+            
+        markup.add("🔙 بازگشت به منو")
         bot.send_message(chat_id, q["question"], reply_markup=markup)
     else:
-        bot.send_message(chat_id, "🎉 شما همه مراحل را با موفقیت پشت سر گذاشتید.")
-
+        bot.send_message(chat_id, "🎉 شما همه مراحل را کامل کردید! به زودی مراحل جدید اضافه خواهد شد.")
 def is_valid_answer(m):
     users = load_users()
     user_id = str(m.chat.id)
