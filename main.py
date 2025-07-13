@@ -394,46 +394,36 @@ def main_menu():
 
 @bot.message_handler(commands=['start'])
 def handle_start(m):
-    user_id = m.chat.id
+    user_id = str(m.chat.id)
     users = load_users()
-
+    
+    # بررسی عضویت در کانال
     if not is_member(user_id):
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("📢 عضویت در کانال", url=f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"))
-        bot.send_message(user_id, "📛 برای استفاده از ربات، ابتدا باید در کانال عضو شوی:", reply_markup=markup)
+        bot.send_message(user_id, "📛 برای استفاده از ربات، ابتدا باید در کانال عضو شوید:", reply_markup=markup)
         return
-
-    if str(user_id) not in users:
-        users[str(user_id)] = {
+    
+    # ایجاد کاربر جدید اگر وجود ندارد
+    if user_id not in users:
+        users[user_id] = {
             "name": "",
             "life": 3,
             "coin": 0,
             "score": 0,
             "step": 0,
-            "last_daily": ""
+            "last_bonus": ""
         }
         save_users(users)
-
-    if users[str(user_id)]["name"] == "":
-        msg = bot.send_message(user_id, "👤 لطفاً **فقط نام واقعی خود** را وارد کنید:", reply_markup=types.ForceReply(selective=True))
-        bot.register_next_step_handler(msg, process_name)  # منتظر پاسخ بعدی کاربر
+    
+    # اگر نام کاربر خالی است
+    if not users[user_id]["name"]:
+        msg = bot.send_message(user_id, "👤 لطفاً نام واقعی خود را وارد کنید (حداقل 2 حرف):", 
+                             reply_markup=types.ForceReply(selective=True))
+        bot.register_next_step_handler(msg, process_name)
     else:
-        bot.send_message(user_id, f"🔹 سلام {users[str(user_id)]['name']}! منوی اصلی:", reply_markup=main_menu())
-
-def process_name(m):
-    user_id = m.chat.id
-    users = load_users()
-    
-    # اگر پیام دریافتی نامعتبر باشد (مثلاً عکس یا فایل)
-    if not m.text or len(m.text.strip()) < 2:  # نام کمتر از ۲ حرف نامعتبر است
-        msg = bot.send_message(user_id, "❌ نام وارد شده معتبر نیست!\nلطفاً **فقط نام واقعی خود** را بنویسید:")
-        bot.register_next_step_handler(msg, process_name)  # دوباره درخواست نام
-        return
-    
-    # ذخیره نام و نمایش منو
-    users[str(user_id)]["name"] = m.text.strip()
-    save_users(users)
-    bot.send_message(user_id, f"✅ ثبت نام موفق!\nسلام {m.text}!", reply_markup=main_menu())
+        bot.send_message(user_id, f"🔹 سلام {users[user_id]['name']}! به منوی اصلی خوش آمدید.", 
+                        reply_markup=main_menu())
 
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
