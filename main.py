@@ -741,13 +741,21 @@ def handle_all_messages(m):
     if m.text and m.text.startswith('/start'):
         return
         
-    # بررسی ثبت نام کاربر
-    if not check_name(m):
+    users = load_users()
+    user_id = str(m.chat.id)
+    
+    # بررسی آیا کاربر ثبت نام کرده است
+    if user_id not in users or not users[user_id].get("name"):
         bot.send_message(m.chat.id, "❗️ لطفاً ابتدا با دستور /start ثبت نام کنید.")
         return
         
-    # اگر کاربر ثبت نام کرده است، پیام را پردازش کن
-    # ... (بقیه کدهای پردازش پیام)
+    # اگر پیام مربوط به بازی است
+    if is_valid_answer(m):
+        answer_question(m)
+        return
+        
+    # سایر پیام‌ها
+    bot.send_message(m.chat.id, "⚠️ لطفاً از منوی اصلی انتخاب کنید.", reply_markup=main_menu())
             
 if __name__ == "__main__":
     Thread(target=run).start()
