@@ -464,53 +464,59 @@ def start_game(m):
         
     send_question(m.chat.id)
 
+def is_valid_answer(m):
+    users = load_users()
+    user_id = str(m.chat.id)
+    
+    if user_id not in users:
+        return False
+        
+    user = users[user_id]
+    step = user.get("step", 0)
+    
+    if step >= len(QUESTIONS):
+        return False
+    
+    q = QUESTIONS[step]
+    # بررسی تطابق دقیق متن پیام با گزینه‌ها (با حذف فاصله‌های اضافی)
+    return any(m.text.strip() == opt.strip() for opt in q["options"])
+
 @bot.message_handler(func=is_valid_answer)
 def answer_question(m):
-    try:
-        users = load_users()
-        user_id = str(m.chat.id)
-        
-        if user_id not in users:
-            bot.send_message(m.chat.id, "❌ کاربر یافت نشد. لطفاً /start را بزنید.")
-            return
-        
-        user = users[user_id]
-        step = user.get("step", 0)
-        
-        if step >= len(QUESTIONS):
-            bot.send_message(m.chat.id, "🎉 شما قبلاً همه سؤالات را پاسخ داده‌اید.")
-            return
-        
-        q = QUESTIONS[step]
-        selected_option = m.text.strip()
-        
-        try:
-            selected_index = q["options"].index(selected_option)
-        except ValueError:
-            bot.send_message(m.chat.id, "❌ گزینه نامعتبر!")
-            return
-        
-        # پردازش پاسخ
-        if selected_index == q["answer"]:
-            user["coin"] += 10
-            user["score"] += 20
-            response = f"✅ پاسخ صحیح!\n\n📝 توضیح: {q['explanations'][selected_index]}"
-        else:
-            user["score"] += 5
-            response = f"❌ پاسخ اشتباه!\n\n📝 توضیح: {q['explanations'][selected_index]}"
-        
-        # نمایش توضیحات
-        explanations = "\n\n🔍 بررسی گزینه‌ها:\n"
-        for idx, opt in enumerate(q["options"]):
-            prefix = "✅" if idx == q["answer"] else "❌"
-            explanations += f"{prefix} {opt}: {q['explanations'][idx]}\n"
-        
-        bot.send_message(m.chat.id, response + explanations)
-        
-        # به روزرسانی مرحله
-        user["step"] += 1
-        save
-        
+    users = load_users()
+    user = users[str(m.chat.id)]
+    step = user["step"]
+
+    q = questions[step]
+    options = q["options"]
+    explanations = q["explanations"]
+    correct_index = q["answer"]
+
+    selected_index = options.index(m.text.strip())
+
+    if selected_index == correct_index:
+        user["coin"] += 10
+        user["score"] += 20
+        result = f"✅ درست گفتی!\n📘 توضیح: {explanations[selected_index]}"
+    else:
+        user["score"] += 5
+        result = f"❌ اشتباه بود!\n📘 توضیح: {explanations[selected_index]}"
+
+    all_expl = "\n\n📖 توضیح تمام گزینه‌ها:\n"
+    for i, opt in enumerate(options):
+        mark = "✅" if i == correct_index else "❌"
+        all_expl += f"{mark} {opt}: {explanations[i]}\n"
+
+    bot.send_message(m.chat.id, result + all_expl)
+
+    user["step"] += 1
+    save_users(users)
+
+    if user["step"] < len(questions):
+        send_question(m.chat.id)
+    else:
+        bot.send_message(m.chat.id, "🏁 تمام مراحل به پایان رسید!")
+
 @bot.message_handler(func=lambda m: m.text == "🔙 بازگشت به منو")
 def back_to_menu(m):
     bot.send_message(m.chat.id, "↩️ بازگشت به منو", reply_markup=main_menu())
