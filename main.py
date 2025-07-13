@@ -525,36 +525,35 @@ def answer_question(m):
     users = load_users()
     user = users[str(m.chat.id)]
     step = user["step"]
+    q = questions[step]  # یا QUESTIONS[step] بسته به اسمت
 
-    q = questions[step]
     options = q["options"]
     explanations = q["explanations"]
-    correct_index = q["answer"]
+    correct = q["answer"]
+    chosen = options.index(m.text.strip())
 
-    selected_index = options.index(m.text.strip())
-
-    if selected_index == correct_index:
+    msg = ""
+    if chosen == correct:
         user["coin"] += 10
         user["score"] += 20
-        result = f"✅ درست گفتی!\n📘 توضیح: {explanations[selected_index]}"
+        msg = f"✅ درست گفتی!\n📘 {explanations[chosen]}"
     else:
         user["score"] += 5
-        result = f"❌ اشتباه بود!\n📘 توضیح: {explanations[selected_index]}"
+        msg = f"❌ اشتباهه!\n📘 {explanations[chosen]}"
 
-    all_expl = "\n\n📖 توضیح تمام گزینه‌ها:\n"
+    all_expl = "\n\n📖 توضیح گزینه‌ها:\n"
     for i, opt in enumerate(options):
-        mark = "✅" if i == correct_index else "❌"
+        mark = "✅" if i == correct else "❌"
         all_expl += f"{mark} {opt}: {explanations[i]}\n"
 
-    bot.send_message(m.chat.id, result + all_expl)
-
+    bot.send_message(m.chat.id, msg + all_expl)
     user["step"] += 1
     save_users(users)
 
     if user["step"] < len(questions):
         send_question(m.chat.id)
     else:
-        bot.send_message(m.chat.id, "🏁 تمام مراحل به پایان رسید!")
+        bot.send_message(m.chat.id, "🏁 همه مراحل تموم شد!")
 
 def is_valid_answer(m):
     users = load_users()
