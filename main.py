@@ -726,18 +726,16 @@ def send_question(chat_id):
         bot.send_message(chat_id, "🎉 شما همه مراحل را کامل کردید! به زودی مراحل جدید اضافه خواهد شد.")
 def is_valid_answer(m):
     users = load_users()
-    user_id = str(m.chat.id)
-    
-    if user_id not in users:
+    user = users.get(str(m.chat.id))
+    if not user:
         return False
-        
-    user = users[user_id]
-    step = user.get("step", 0)
-    
-    if step >= len(QUESTIONS):
+
+    step = user.get("step", -1)
+    if step < 0 or step >= len(questions):  # توجه: questions همون لیست سوالاته
         return False
-    
-    q = QUESTIONS[step]
+
+    q = questions[step]
+    return m.text.strip() in q["options"]
     # بررسی آیا متن پیام با یکی از گزینه‌ها مطابقت دارد
     return any(m.text.strip() == opt for opt in q["options"])
 
