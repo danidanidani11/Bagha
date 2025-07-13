@@ -410,20 +410,6 @@ def process_name(m):
     users[str(m.chat.id)]["name"] = text.strip()
     save_users(users)
     bot.send_message(m.chat.id, f"✅ ثبت شد: {text.strip()}", reply_markup=main_menu())
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
-    
 @bot.message_handler(commands=['start'])
 def handle_start(m):
     user_id = str(m.chat.id)
@@ -456,18 +442,6 @@ def handle_start(m):
     else:
         bot.send_message(user_id, f"🔹 سلام {users[user_id]['name']}!", reply_markup=main_menu())
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
 def start_game(m):
@@ -507,85 +481,47 @@ def is_valid_answer(m):
     # بررسی تطابق دقیق متن پیام با گزینه‌ها (با حذف فاصله‌های اضافی)
     return any(m.text.strip() == opt.strip() for opt in q["options"])
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
-
 @bot.message_handler(func=is_valid_answer)
 def answer_question(m):
     users = load_users()
     user = users[str(m.chat.id)]
     step = user["step"]
-    q = questions[step]  # یا QUESTIONS[step] بسته به اسمت
 
+    q = questions[step]
     options = q["options"]
     explanations = q["explanations"]
-    correct = q["answer"]
-    chosen = options.index(m.text.strip())
+    correct_index = q["answer"]
 
-    msg = ""
-    if chosen == correct:
+    selected_index = options.index(m.text.strip())
+
+    if selected_index == correct_index:
         user["coin"] += 10
         user["score"] += 20
-        msg = f"✅ درست گفتی!\n📘 {explanations[chosen]}"
+        result = f"✅ درست گفتی!\n📘 توضیح: {explanations[selected_index]}"
     else:
         user["score"] += 5
-        msg = f"❌ اشتباهه!\n📘 {explanations[chosen]}"
+        result = f"❌ اشتباه بود!\n📘 توضیح: {explanations[selected_index]}"
 
-    all_expl = "\n\n📖 توضیح گزینه‌ها:\n"
+    all_expl = "\n\n📖 توضیح تمام گزینه‌ها:\n"
     for i, opt in enumerate(options):
-        mark = "✅" if i == correct else "❌"
+        mark = "✅" if i == correct_index else "❌"
         all_expl += f"{mark} {opt}: {explanations[i]}\n"
 
-    bot.send_message(m.chat.id, msg + all_expl)
+    bot.send_message(m.chat.id, result + all_expl)
+
     user["step"] += 1
     save_users(users)
 
     if user["step"] < len(questions):
         send_question(m.chat.id)
     else:
-        bot.send_message(m.chat.id, "🏁 همه مراحل تموم شد!")
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
+        bot.send_message(m.chat.id, "🏁 تمام مراحل به پایان رسید!")
 
 @bot.message_handler(func=lambda m: m.text == "🔙 بازگشت به منو")
 def back_to_menu(m):
     bot.send_message(m.chat.id, "↩️ بازگشت به منو", reply_markup=main_menu())
 
 # 🛒 فروشگاه - منو
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
-    
 @bot.message_handler(func=lambda m: m.text == "🛒 فروشگاه")
 def shop(m):
     msg = f"""🛒 فروشگاه:
@@ -603,18 +539,6 @@ def shop(m):
     markup.add("🧡 خرید جان (۱۰۰ سکه)", "🔙 بازگشت به منو")
     bot.send_message(m.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # ❤️ خرید جان با ۱۰۰ سکه
 @bot.message_handler(func=lambda m: m.text == "🧡 خرید جان (۱۰۰ سکه)")
 def buy_life(m):
@@ -628,18 +552,6 @@ def buy_life(m):
     else:
         bot.send_message(m.chat.id, "❌ شما سکه کافی برای خرید جان ندارید.")
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # 💳 ارسال فیش پرداخت (درخواست)
 @bot.message_handler(content_types=['photo'])
 def handle_photo_payment(m):
@@ -650,19 +562,6 @@ def handle_photo_payment(m):
         bot.send_photo(ADMIN_ID, file_id, caption=caption, reply_markup=payment_markup(m.chat.id))
     else:
         bot.send_message(m.chat.id, "📸 لطفاً فیش پرداخت را به صورت *عکس* یا *متن* ارسال کن:", reply_markup=types.ForceReply(selective=True), parse_mode="Markdown")
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # 📤 دریافت فیش پرداخت و ارسال برای ادمین
 @bot.message_handler(func=lambda m: m.reply_to_message and "فیش" in m.reply_to_message.text and m.text != "💳 ارسال فیش پرداخت")
 def handle_payment(m):
@@ -680,19 +579,6 @@ def payment_markup(user_id):
     markup.add(types.InlineKeyboardButton("❌ رد", callback_data=f"reject_{user_id}"))
     return markup
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
-
 # ✅ تایید پرداخت توسط ادمین
 @bot.callback_query_handler(func=lambda call: call.data.startswith("approve_"))
 def approve_payment(call):
@@ -703,26 +589,12 @@ def approve_payment(call):
     bot.send_message(int(user_id), "✅ پرداخت شما تایید شد! ۱۰۰ سکه به حساب شما اضافه شد.")
     bot.answer_callback_query(call.id, "پرداخت تایید شد.")
 
-
 # ❌ رد پرداخت توسط ادمین با پیام دقیق‌تر
 @bot.callback_query_handler(func=lambda call: call.data.startswith("reject_"))
 def reject_payment(call):
     user_id = call.data.split("_")[1]
     bot.send_message(int(user_id), "❌ رسید پرداخت شما توسط ادمین رد شد.\nلطفاً بررسی و در صورت نیاز، مجدداً ارسال کنید.")
     bot.answer_callback_query(call.id, "رد شد.")
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 
 # 👤 پروفایل
 @bot.message_handler(func=lambda m: m.text == "👤 پروفایل")
@@ -735,18 +607,6 @@ def profile(m):
 ⭐️ امتیاز: {u['score']}"""
     bot.send_message(m.chat.id, msg)
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # 🎁 پاداش روزانه
 @bot.message_handler(func=lambda m: m.text == "🎁 پاداش روزانه")
 def daily_bonus(m):
@@ -783,37 +643,12 @@ def daily_bonus(m):
         hours = int(remaining // 3600)
         minutes = int((remaining % 3600) // 60)
         bot.send_message(m.chat.id, f"⏳ باید {hours} ساعت و {minutes} دقیقه دیگر صبر کنید.")
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # 🧑‍🤝‍🧑 دعوت
 @bot.message_handler(func=lambda m: m.text == "🧑‍🤝‍🧑 دعوت دوستان")
 def invite(m):
     link = f"https://t.me/{bot.get_me().username}?start={m.chat.id}"
     bot.send_message(m.chat.id, f"📨 لینک دعوت شما:\n{link}\nهر دعوت = ۵۰ سکه")
 
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 # 🎖️ برترین‌ها
 @bot.message_handler(func=lambda m: m.text == "🏆 برترین ها")
 def top_players(m):
@@ -840,19 +675,6 @@ def run():
 def set_webhook():
     bot.remove_webhook()
     bot.set_webhook(url=f"https://bagha-2qv0.onrender.com/{API_TOKEN}")  # 🔁 آدرس دقیق Render
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 
 @bot.message_handler(func=lambda m: True)
 def block_if_no_name(m):
@@ -900,19 +722,6 @@ def is_valid_answer(m):
     return m.text.strip() in q["options"]
     # بررسی آیا متن پیام با یکی از گزینه‌ها مطابقت دارد
     return any(m.text.strip() == opt for opt in q["options"])
-
-def is_valid_answer(m):
-    users = load_users()
-    user = users.get(str(m.chat.id))
-    if not user:
-        return False
-
-    step = user.get("step", -1)
-    if step < 0 or step >= len(questions):  # یا QUESTIONS اگه اسم لیست سوالات اینه
-        return False
-
-    q = questions[step]
-    return m.text.strip() in q["options"]
 
 @bot.message_handler(func=lambda m: True)
 def handle_all_messages(m):
