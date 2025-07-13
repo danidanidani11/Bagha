@@ -452,19 +452,23 @@ def handle_start(m):
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
 def start_game(m):
     users = load_users()
-    u = users[str(m.chat.id)]
-    if u["life"] <= 0:
+    user_id = str(m.chat.id)
+    
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❌ کاربر یافت نشد. لطفاً /start را بزنید.")
+        return
+        
+    user = users[user_id]
+    
+    if user["life"] <= 0:
         bot.send_message(m.chat.id, "❌ شما جان ندارید! لطفاً از فروشگاه جان بخرید.")
         return
-    if u["step"] >= len(QUESTIONS):
+        
+    if user["step"] >= len(QUESTIONS):
         bot.send_message(m.chat.id, "🎉 شما تمام مراحل را گذرانده‌اید!")
         return
-    q = QUESTIONS[u["step"]]
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    for i, opt in enumerate(q["options"]):
-        markup.add(f"{i+1} - {opt}")
-    markup.add("🔙 بازگشت به منو")
-    bot.send_message(m.chat.id, q["question"], reply_markup=markup)
+        
+    send_question(m.chat.id)
 
 def is_valid_answer(m):
     users = load_users()
