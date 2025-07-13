@@ -510,6 +510,7 @@ def answer_question(m):
         # به روزرسانی مرحله
         user["step"] += 1
         save
+        
 @bot.message_handler(func=lambda m: m.text == "🔙 بازگشت به منو")
 def back_to_menu(m):
     bot.send_message(m.chat.id, "↩️ بازگشت به منو", reply_markup=main_menu())
