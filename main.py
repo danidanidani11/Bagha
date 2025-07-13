@@ -469,46 +469,54 @@ def is_valid_answer(m):
 @bot.message_handler(func=is_valid_answer)
 def answer_question(m):
     users = load_users()
-    user = users[str(m.chat.id)]
-    step = user["step"]
-
+    user_id = str(m.chat.id)
+    
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❌ کاربر یافت نشد. لطفاً /start را بزنید.")
+        return
+    
+    user = users[user_id]
+    step = user.get("step", 0)
+    
     if step >= len(QUESTIONS):
         bot.send_message(m.chat.id, "🎉 شما قبلاً همه سؤالات را پاسخ داده‌اید.")
         return
-
+    
     q = QUESTIONS[step]
-    options = q["options"]
-    explanations = q["explanations"]
-    correct_index = q["answer"]
-
+    selected_option = m.text.strip()
+    
     try:
-        selected_index = options.index(m.text.strip())
+        selected_index = q["options"].index(selected_option)
     except ValueError:
-        bot.send_message(m.chat.id, "❗️گزینه نامعتبر است. لطفاً یکی از گزینه‌های پیشنهادی را انتخاب کن.")
+        bot.send_message(m.chat.id, "❌ گزینه نامعتبر!")
         return
-
-    if selected_index == correct_index:
+    
+    # پردازش پاسخ
+    if selected_index == q["answer"]:
         user["coin"] += 10
         user["score"] += 20
-        result = f"✅ درست گفتی!\n\n📘 توضیح: {explanations[selected_index]}"
+        response = f"✅ پاسخ صحیح!\n\n📝 توضیح: {q['explanations'][selected_index]}"
     else:
         user["score"] += 5
-        result = f"❌ جواب اشتباه بود!\n\n📘 دلیل انتخابت:\n{explanations[selected_index]}"
-
-    all_expl = "\n\n📖 بررسی تمام گزینه‌ها:\n"
-    for i, opt in enumerate(options):
-        prefix = "✅" if i == correct_index else "🔸"
-        all_expl += f"{prefix} {opt}: {explanations[i]}\n"
-
-    bot.send_message(m.chat.id, result + all_expl)
-
+        response = f"❌ پاسخ اشتباه!\n\n📝 توضیح: {q['explanations'][selected_index]}"
+    
+    # نمایش توضیحات همه گزینه‌ها
+    explanations = "\n\n🔍 بررسی گزینه‌ها:\n"
+    for idx, opt in enumerate(q["options"]):
+        prefix = "✅" if idx == q["answer"] else "❌"
+        explanations += f"{prefix} {opt}: {q['explanations'][idx]}\n"
+    
+    bot.send_message(m.chat.id, response + explanations)
+    
+    # به روزرسانی مرحله
     user["step"] += 1
     save_users(users)
-
+    
+    # ارسال سوال بعدی یا پیام پایانی
     if user["step"] < len(QUESTIONS):
         send_question(m.chat.id)
     else:
-        bot.send_message(m.chat.id, "🏁 همه مراحل به پایان رسید. منتظر آپدیت‌های بعدی باش!")
+        bot.send_message(m.chat.id, "🎉 شما همه مراحل را کامل کردید! به زودی مراحل جدید اضافه خواهد شد.")
 
 @bot.message_handler(func=lambda m: m.text == "🔙 بازگشت به منو")
 def back_to_menu(m):
