@@ -376,8 +376,8 @@ def load_users():
 
 def check_name(m):
     users = load_users()
-    return str(m.chat.id) in users and users[str(m.chat.id)]["name"] != ""
-
+    user_id = str(m.chat.id)
+    return user_id in users and "name" in users[user_id] and users[user_id]["name"].strip() != ""
 def is_member(user_id):
     try:
         status = bot.get_chat_member(CHANNEL_USERNAME, user_id).status
