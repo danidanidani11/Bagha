@@ -801,32 +801,40 @@ def handle_question_answer(call):
     # بروزرسانی آمار کاربر
     if correct:
         u["score"] += 20
-        u["coins"] += 10
+        u["coin"] += 10
+        result_message = "✅ پاسخ شما درست بود!\n📊 ۲۰ امتیاز و ۱۰ سکه دریافت کردید."
     else:
         u["score"] += 5
-        u["hearts"] -= 1  # ❗️ کم کردن جان
+        u["life"] -= 1  # کاهش ۱ جان برای پاسخ اشتباه
+        result_message = "❌ پاسخ شما اشتباه بود!\n📊 ۵ امتیاز دریافت کردید و ۱ جان از دست دادید."
 
-    # مرحله بعدی
-    u["step"] += 1
-
-    # ذخیره در فایل
+    # ذخیره تغییرات
     data[user_id] = u
     with open(DATA_FILE, "w") as f:
         json.dump(data, f)
 
     # نمایش نتیجه کاربر
-    bot.edit_message_text(f"{explanation_text}", chat_id, call.message.message_id)
+    bot.edit_message_text(
+        f"{result_message}\n\n📝 توضیحات:\n{explanation_text}",
+        chat_id,
+        call.message.message_id
+    )
 
-    # سوال بعدی یا پایان بازی
+    # بررسی اگر جان کاربر تمام شده باشد
+    if u["life"] <= 0:
+        bot.send_message(chat_id, "💔 جان شما به پایان رسید! برای ادامه بازی می‌توانید جان خریداری کنید.", reply_markup=main_menu())
+        return
+
+    # ارسال سوال بعدی اگر مرحله تمام نشده باشد
+    u["step"] += 1
     if u["step"] < len(questions):
         next_q = questions[u["step"]]
         markup = types.InlineKeyboardMarkup()
         for i, opt in enumerate(next_q["options"]):
             markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
-
         bot.send_message(chat_id, f"{next_q['question']}", reply_markup=markup)
     else:
-        bot.send_message(chat_id, "🎉 تبریک! تمام مراحل بازی را به پایان رساندی.")
+        bot.send_message(chat_id, "🎉 تبریک! تمام مراحل بازی را به پایان رساندید.")
             
 if __name__ == "__main__":
     Thread(target=run).start()
