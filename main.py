@@ -1,6 +1,24 @@
 import os
 import json
 
+DATA_DIR = "/mnt/data"
+DATA_FILE = f"{DATA_DIR}/users.json"
+
+# ✅ ساخت پوشه اگر وجود نداشت
+os.makedirs(DATA_DIR, exist_ok=True)
+
+# 📥 لود فایل اگر وجود داشت، یا ساخت فایل جدید
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        users = json.load(f)
+else:
+    users = {}
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+        
+import os
+import json
+
 DATA_FILE = "/mnt/data/users.json"
 
 # اگر فایل وجود داشت، لودش کن
