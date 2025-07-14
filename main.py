@@ -453,13 +453,12 @@ def start_game(m):
         return
 
     user = users[user_id]
-    user.setdefault("step", 0)
-    user.setdefault("coin", 0)
+    user.setdefault("step", 0)  # مقدار پیش‌فرض اگر وجود نداشته باشد
     user.setdefault("life", 3)
+    user.setdefault("coin", 0)
     user.setdefault("score", 0)
 
-    # ذخیره تغییرات اولیه (در صورت نیاز)
-    users[user_id] = user
+    # ذخیره تغییرات اولیه
     save_users(users)
 
     # بارگذاری سوالات
