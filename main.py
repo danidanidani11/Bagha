@@ -1067,6 +1067,15 @@ def start_game(m):
         bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید. /start")
         return
 
+    if user["life"] <= 0:
+        bot.send_message(message.chat.id, "❌ جونت تموم شده!\nبرای ادامه از فروشگاه جون بخر 🛒")
+        return  # از تابع خارج شو، نذار بازی شروع بشه
+
+    # ادامه‌ی کد شروع بازی در صورتی که جون داشته باشه
+    user["step"] = 0
+    save_user(message.from_user.id, user)
+    send_question(message.chat.id, message.from_user.id)
+
     user = users[user_id]
     user.setdefault("step", 0)  # مقدار پیش‌فرض اگر وجود نداشته باشد
     user.setdefault("life", 3)
