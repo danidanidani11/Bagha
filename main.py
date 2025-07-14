@@ -1512,6 +1512,14 @@ def start_game(m):
         markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
 
     bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
+
+def get_user(user_id):
+    return users.get(str(user_id), None)
+
+def save_user(user_id, user_data):
+    users[str(user_id)] = user_data
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
             
 if __name__ == "__main__":
     Thread(target=run).start()
