@@ -446,37 +446,33 @@ def handle_start(m):
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
 def start_game(m):
     user_id = str(m.chat.id)
+    users = load_users()
 
-    # بارگذاری اطلاعات کاربر
-    with open(DATA_FILE, "r") as f:
-        data = json.load(f)
-
-    if user_id not in data:
-        bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید.")
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید. /start")
         return
 
-    u = data[user_id]
-    u.setdefault("step", 0)
-    u.setdefault("coins", 0)
-    u.setdefault("hearts", 3)
-    u.setdefault("score", 0)
+    user = users[user_id]
+    user.setdefault("step", 0)
+    user.setdefault("coin", 0)
+    user.setdefault("life", 3)
+    user.setdefault("score", 0)
 
-    # ذخیره تغییرات اولیه (در صورت نبود فیلد)
-    data[user_id] = u
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
+    # ذخیره تغییرات اولیه (در صورت نیاز)
+    users[user_id] = user
+    save_users(users)
 
     # بارگذاری سوالات
     with open(QUESTIONS_FILE, "r") as f:
         questions = json.load(f)
 
-    if u["step"] >= len(questions):
-        bot.send_message(m.chat.id, "✅ تمام سوالات را قبلاً گذرانده‌اید.")
+    # بررسی اگر کاربر تمام مراحل را گذرانده باشد
+    if user["step"] >= len(questions):
+        bot.send_message(m.chat.id, "🎉 شما تمام مراحل را کامل کرده‌اید! به زودی مراحل جدید اضافه خواهد شد.")
         return
 
-    q = questions[u["step"]]
-
-    # ساخت دکمه‌ها با callback_data
+    # ارسال سوال از مرحله‌ای که کاربر قبلاً رسیده بود
+    q = questions[user["step"]]
     markup = types.InlineKeyboardMarkup()
     for i, opt in enumerate(q["options"]):
         markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
