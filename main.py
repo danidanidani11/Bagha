@@ -1059,44 +1059,40 @@ def handle_start(m):
 
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
-def start_game(message):
-    user_id = message.from_user.id
-    user = get_user(user_id)
+def start_game(m):
+    user_id = str(m.chat.id)
+    users = load_users()
 
-    # اگر کاربر اصلاً ثبت نشده باشد، یک کاربر پیش‌فرض بساز
-    if not user:
-        user = {
-            "name": message.from_user.first_name,
-            "life": 3,
-            "coin": 0,
-            "score": 0,
-            "step": 0,
-            "playing": False,
-            "invited_by": None
-        }
-
-    # اگر جان تمام شده باشد، اجازه ادامه ندارد
-    if user["life"] <= 0:
-        bot.send_message(
-            message.chat.id,
-            "❌ جونت تموم شده!\nبرای ادامه باید از فروشگاه جان بخری 🛒"
-        )
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید. /start")
         return
 
-    # اگر در حال انجام بازی قبلی هست، ادامه دهد
-    if user.get("playing", False) and user.get("step", 0) < len(questions):
-        bot.send_message(message.chat.id, "📌 ادامه بازی از همان مرحله:")
-        send_question(message.chat.id, user_id)
+    user = users[user_id]
+    user.setdefault("step", 0)  # مقدار پیش‌فرض اگر وجود نداشته باشد
+    user.setdefault("life", 3)
+    user.setdefault("coin", 0)
+    user.setdefault("score", 0)
+
+    # ذخیره تغییرات اولیه
+    save_users(users)
+
+    # بارگذاری سوالات
+    with open(QUESTIONS_FILE, "r") as f:
+        questions = json.load(f)
+
+    # بررسی اگر کاربر تمام مراحل را گذرانده باشد
+    if user["step"] >= len(questions):
+        bot.send_message(m.chat.id, "🎉 شما تمام مراحل را کامل کرده‌اید! به زودی مراحل جدید اضافه خواهد شد.")
         return
 
-    # شروع بازی جدید از مرحله اول
-    user["step"] = 0
-    user["playing"] = True
-    save_user(user_id, user)
+    # ارسال سوال از مرحله‌ای که کاربر قبلاً رسیده بود
+    q = questions[user["step"]]
+    markup = types.InlineKeyboardMarkup()
+    for i, opt in enumerate(q["options"]):
+        markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
 
-    bot.send_message(message.chat.id, "🧩 بازی شروع شد! آماده‌ای؟")
-    send_question(message.chat.id, user_id)
-    
+    bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
+
 def is_valid_answer(m):
     users = load_users()
     user_id = str(m.chat.id)
