@@ -996,9 +996,10 @@ if not os.path.exists(QUESTIONS_FILE):
 with open(QUESTIONS_FILE) as f:
     QUESTIONS = json.load(f)
 
-def save_users(users):
-    with open(DATA_FILE, "w") as f:
-        json.dump(users, f)
+def save_user(user_id, user_data):
+    users[str(user_id)] = user_data
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
 
 def load_users():
     with open(DATA_FILE) as f:
@@ -1326,9 +1327,8 @@ def block_if_no_name(m):
         if m.text != "/start":
             bot.send_message(m.chat.id, "❗️ لطفاً ابتدا نام خود را وارد کنید. /start")
 
-def get_user_step(user_id):
-    users = load_users()
-    return users.get(str(user_id), {}).get("step", -1)
+def get_user(user_id):
+    return users.get(str(user_id), None)
 
 def send_question(chat_id):
     users = load_users()
