@@ -765,51 +765,46 @@ def handle_question_answer(call):
     chat_id = call.message.chat.id
     user_id = str(chat_id)
 
-    # بارگذاری اطلاعات کاربر
-    with open(DATA_FILE, "r") as f:
-        data = json.load(f)
-
-    u = data.get(user_id)
-    if not u:
-        return
-
-    current_step = u.get("step", 0)
-
-    # بارگذاری سوالات
+    # بارگذاری اطلاعات کاربر و سوالات
+    users = load_users()
     with open(QUESTIONS_FILE, "r") as f:
         questions = json.load(f)
 
-    # جلوگیری از خطا اگر سوالات تمام شده باشند
+    user = users.get(user_id)
+    if not user:
+        bot.answer_callback_query(call.id, "❌ خطا در یافتن اطلاعات کاربر.")
+        return
+
+    current_step = user.get("step", 0)
     if current_step >= len(questions):
-        bot.answer_callback_query(call.id, "✅ تمام سوالات را قبلاً گذرانده‌اید.")
+        bot.answer_callback_query(call.id, "✅ شما تمام مراحل را گذرانده‌اید!")
         return
 
     question = questions[current_step]
     selected_option = int(call.data.split("_")[1])
     correct = selected_option == question["answer"]
 
-    # پاسخ‌دهی و توضیح گزینه‌ها
+    # ساخت متن توضیحات
     explanation_text = ""
     for idx, opt in enumerate(question["options"]):
         mark = "✅" if idx == question["answer"] else ("❌" if idx == selected_option else "▫️")
         explanation_text += f"{mark} {opt}\n— {question['explanations'].get(idx, '')}\n\n"
 
-    # بروزرسانی آمار کاربر
+    # بروزرسانی اطلاعات کاربر
     if correct:
-        u["score"] += 20
-        u["coin"] += 10
-        result_message = "✅ پاسخ شما درست بود!\n📊 ۲۰ امتیاز و ۱۰ سکه دریافت کردید."
+        user["score"] += 20
+        user["coin"] += 10
+        result_message = "✅ پاسخ درست! +۲۰ امتیاز و +۱۰ سکه."
     else:
-        u["score"] += 5
-        u["life"] -= 1  # کاهش ۱ جان برای پاسخ اشتباه
-        result_message = "❌ پاسخ شما اشتباه بود!\n📊 ۵ امتیاز دریافت کردید و ۱ جان از دست دادید."
+        user["score"] += 5
+        user["life"] -= 1
+        result_message = "❌ پاسخ اشتباه! +۵ امتیاز و -۱ جان."
 
     # ذخیره تغییرات
-    data[user_id] = u
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f)
+    users[user_id] = user
+    save_users(users)
 
-    # نمایش نتیجه کاربر
+    # نمایش نتیجه به کاربر
     bot.edit_message_text(
         f"{result_message}\n\n📝 توضیحات:\n{explanation_text}",
         chat_id,
@@ -817,20 +812,20 @@ def handle_question_answer(call):
     )
 
     # بررسی اگر جان کاربر تمام شده باشد
-    if u["life"] <= 0:
-        bot.send_message(chat_id, "💔 جان شما به پایان رسید! برای ادامه بازی می‌توانید جان خریداری کنید.", reply_markup=main_menu())
+    if user["life"] <= 0:
+        bot.send_message(chat_id, "💔 جان شما تمام شد! برای ادامه، جان خریداری کنید.", reply_markup=main_menu())
         return
 
-    # ارسال سوال بعدی اگر مرحله تمام نشده باشد
-    u["step"] += 1
-    if u["step"] < len(questions):
-        next_q = questions[u["step"]]
+    # افزایش مرحله و ارسال سوال بعدی
+    user["step"] += 1
+    if user["step"] < len(questions):
+        next_q = questions[user["step"]]
         markup = types.InlineKeyboardMarkup()
         for i, opt in enumerate(next_q["options"]):
             markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
         bot.send_message(chat_id, f"{next_q['question']}", reply_markup=markup)
     else:
-        bot.send_message(chat_id, "🎉 تبریک! تمام مراحل بازی را به پایان رساندید.")
+        bot.send_message(chat_id, "🎉 تبریک! شما تمام مراحل را کامل کردید!")
             
 if __name__ == "__main__":
     Thread(target=run).start()
