@@ -744,6 +744,67 @@ def handle_all_messages(m):
         
     # سایر پیام‌ها
     bot.send_message(m.chat.id, "⚠️ لطفاً از منوی اصلی انتخاب کنید.", reply_markup=main_menu())
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("q_"))
+def handle_question_answer(call):
+    chat_id = call.message.chat.id
+    user_id = str(chat_id)
+
+    # بارگذاری اطلاعات کاربر
+    with open(DATA_FILE, "r") as f:
+        data = json.load(f)
+
+    u = data.get(user_id)
+    if not u:
+        return
+
+    current_step = u.get("step", 0)
+    with open(QUESTIONS_FILE, "r") as f:
+        questions = json.load(f)
+
+    # جلوگیری از خطا اگر سوال تمام شده
+    if current_step >= len(questions):
+        bot.answer_callback_query(call.id, "✅ تمام سوالات را گذرانده‌اید!")
+        return
+
+    question = questions[current_step]
+    selected_option = int(call.data.split("_")[1])
+    correct = selected_option == question["answer"]
+
+    # پاسخ به کاربر
+    explanation_text = ""
+    for idx, opt in enumerate(question["options"]):
+        mark = "✅" if idx == question["answer"] else ("❌" if idx == selected_option else "▫️")
+        explanation_text += f"{mark} {opt}\n— {question['explanations'].get(idx, '')}\n\n"
+
+    # آپدیت امتیاز، سکه و جان
+    if correct:
+        u["coins"] += 10
+        u["score"] += 20
+    else:
+        u["score"] += 5
+        u["hearts"] -= 1
+
+    # مرحله بعدی
+    u["step"] += 1
+
+    # ذخیره
+    data[user_id] = u
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f)
+
+    # ارسال پاسخ و سوال بعد
+    bot.edit_message_text(f"{explanation_text}", chat_id, call.message.message_id)
+
+    if u["step"] < len(questions):
+        next_q = questions[u["step"]]
+        markup = types.InlineKeyboardMarkup()
+        for i, opt in enumerate(next_q["options"]):
+            markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
+
+        bot.send_message(chat_id, f"{next_q['question']}", reply_markup=markup)
+    else:
+        bot.send_message(chat_id, "🎉 تبریک! تمام مراحل را به پایان رساندی.")
             
 if __name__ == "__main__":
     Thread(target=run).start()
