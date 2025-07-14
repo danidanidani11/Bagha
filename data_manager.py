@@ -1,9 +1,10 @@
 import json
 import os
 
+# مسیر فایل اطلاعات کاربران
 DATA_FILE = "users.json"
 
-# اگه فایل وجود داره، لودش کن؛ وگرنه فایل خالی بساز
+# اگر فایل وجود داشت، بخونش، وگرنه یه دیکشنری خالی بساز
 if os.path.exists(DATA_FILE):
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         users = json.load(f)
@@ -12,9 +13,11 @@ else:
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=2)
 
+# گرفتن اطلاعات کاربر
 def get_user(user_id):
     return users.get(str(user_id), None)
 
+# ذخیره‌سازی اطلاعات کاربر
 def save_user(user_id, user_data):
     users[str(user_id)] = user_data
     with open(DATA_FILE, "w", encoding="utf-8") as f:
