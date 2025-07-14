@@ -1063,7 +1063,7 @@ def start_game(message):
     user_id = message.from_user.id
     user = get_user(user_id)
 
-    # اگه هنوز داده‌ای براش وجود نداره
+    # اگر کاربر اصلاً ثبت نشده باشد، یک کاربر پیش‌فرض بساز
     if not user:
         user = {
             "name": message.from_user.first_name,
@@ -1071,21 +1071,25 @@ def start_game(message):
             "coin": 0,
             "score": 0,
             "step": 0,
-            "playing": False
+            "playing": False,
+            "invited_by": None
         }
 
-    # اگر جان تموم شده بود
+    # اگر جان تمام شده باشد، اجازه ادامه ندارد
     if user["life"] <= 0:
-        bot.send_message(message.chat.id, "❌ جونت تموم شده!\nبرای ادامه از فروشگاه جان تهیه کن.")
+        bot.send_message(
+            message.chat.id,
+            "❌ جونت تموم شده!\nبرای ادامه باید از فروشگاه جان بخری 🛒"
+        )
         return
 
-    # اگر در حال بازی بوده، ادامه بده
+    # اگر در حال انجام بازی قبلی هست، ادامه دهد
     if user.get("playing", False) and user.get("step", 0) < len(questions):
         bot.send_message(message.chat.id, "📌 ادامه بازی از همان مرحله:")
         send_question(message.chat.id, user_id)
         return
 
-    # شروع بازی از اول
+    # شروع بازی جدید از مرحله اول
     user["step"] = 0
     user["playing"] = True
     save_user(user_id, user)
