@@ -2,7 +2,6 @@ import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
 from threading import Thread
-from data_manager import get_user, save_user
 
 API_TOKEN = '7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew'
 bot = telebot.TeleBot(API_TOKEN)
