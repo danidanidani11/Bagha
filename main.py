@@ -799,8 +799,13 @@ def handle_question_answer(call):
         user["life"] -= 1
         result_message = "❌ پاسخ اشتباه! +۵ امتیاز و -۱ جان."
 
+    # افزایش مرحله فقط اگر کاربر هنوز جان دارد
+    if user["life"] > 0:
+        user["step"] += 1
+    else:
+        bot.send_message(chat_id, "💔 جان شما تمام شد! برای ادامه، جان خریداری کنید.", reply_markup=main_menu())
+
     # ذخیره تغییرات
-    users[user_id] = user
     save_users(users)
 
     # نمایش نتیجه به کاربر
@@ -810,20 +815,14 @@ def handle_question_answer(call):
         call.message.message_id
     )
 
-    # بررسی اگر جان کاربر تمام شده باشد
-    if user["life"] <= 0:
-        bot.send_message(chat_id, "💔 جان شما تمام شد! برای ادامه، جان خریداری کنید.", reply_markup=main_menu())
-        return
-
-    # افزایش مرحله و ارسال سوال بعدی
-    user["step"] += 1
-    if user["step"] < len(questions):
+    # ارسال سوال بعدی اگر کاربر جان دارد و مرحله تمام نشده باشد
+    if user["life"] > 0 and user["step"] < len(questions):
         next_q = questions[user["step"]]
         markup = types.InlineKeyboardMarkup()
         for i, opt in enumerate(next_q["options"]):
             markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
         bot.send_message(chat_id, f"{next_q['question']}", reply_markup=markup)
-    else:
+    elif user["step"] >= len(questions):
         bot.send_message(chat_id, "🎉 تبریک! شما تمام مراحل را کامل کردید!")
             
 if __name__ == "__main__":
