@@ -17,12 +17,10 @@ app = Flask(__name__)
 DATA_FILE = "users.json"
 QUESTIONS_FILE = "questions.json"
 
-# بارگذاری یا ایجاد فایل کاربران
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, "w") as f:
         json.dump({}, f)
 
-# بارگذاری یا ایجاد سوالات
 if not os.path.exists(QUESTIONS_FILE):
     sample_questions = [
         {
@@ -62,13 +60,6 @@ def load_users():
     with open(DATA_FILE) as f:
         return json.load(f)
 
-def check_name(m):
-    users = load_users()
-    user_id = str(m.chat.id)
-    if m.text and m.text.startswith('/start'):
-        return True
-    return user_id in users and "name" in users[user_id] and users[user_id]["name"].strip() != ""
-
 def is_member(user_id):
     try:
         status = bot.get_chat_member(CHANNEL_USERNAME, user_id).status
@@ -82,18 +73,6 @@ def main_menu():
     markup.add("🛒 فروشگاه", "🧑‍🤝‍🧑 دعوت دوستان")
     markup.add("👤 پروفایل", "🎁 پاداش روزانه")
     return markup
-
-@bot.message_handler(func=lambda m: m.reply_to_message and "نام خود را وارد کن" in m.reply_to_message.text)
-def process_name(m):
-    text = m.text or ""
-    if text.startswith("/"):
-        bot.send_message(m.chat.id, "❗️نام معتبر نیست. لطفاً فقط نام خود را وارد کنید:")
-        return
-
-    users = load_users()
-    users[str(m.chat.id)]["name"] = text.strip()
-    save_users(users)
-    bot.send_message(m.chat.id, f"✅ ثبت شد: {text.strip()}", reply_markup=main_menu())
 
 @bot.message_handler(commands=['start'])
 def handle_start(m):
@@ -123,6 +102,18 @@ def handle_start(m):
         bot.register_next_step_handler(msg, process_name)
     else:
         bot.send_message(user_id, f"🔹 سلام {users[user_id]['name']}!", reply_markup=main_menu())
+
+@bot.message_handler(func=lambda m: m.reply_to_message and "نام خود را وارد کن" in m.reply_to_message.text)
+def process_name(m):
+    text = m.text.strip()
+    if len(text) < 2:
+        bot.send_message(m.chat.id, "❗️نام باید حداقل 2 حرف باشد. لطفاً مجدداً وارد کنید:")
+        return
+
+    users = load_users()
+    users[str(m.chat.id)]["name"] = text
+    save_users(users)
+    bot.send_message(m.chat.id, f"✅ ثبت شد: {text}", reply_markup=main_menu())
 
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
 def start_game(m):
@@ -224,7 +215,91 @@ def send_question(chat_id):
 def back_to_menu(m):
     bot.send_message(m.chat.id, "↩️ بازگشت به منو", reply_markup=main_menu())
 
-# بقیه توابع (فروشگاه، پروفایل، ...) مانند قبل باقی می‌مانند
+@bot.message_handler(func=lambda m: m.text == "🛒 فروشگاه")
+def shop(m):
+    msg = f"""🛒 فروشگاه:
+
+💰 قیمت ۱۰۰ سکه = ۴ ترون  
+💳 آدرس ترون: `{TRON_ADDRESS}`
+
+✅ پس از پرداخت، همین پیام را ریپلای و فیش را ارسال کنید (عکس یا متن).
+
+📍 همچنین می‌توانید با ۱۰۰ سکه، ۱ ❤️ جان بخرید:
+برای خرید جان، گزینه زیر را انتخاب کنید:
+"""
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    markup.add("🧡 خرید جان (۱۰۰ سکه)", "🔙 بازگشت به منو")
+    bot.send_message(m.chat.id, msg, reply_markup=markup, parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.text == "🧡 خرید جان (۱۰۰ سکه)")
+def buy_life(m):
+    users = load_users()
+    u = users[str(m.chat.id)]
+    if u["coin"] >= 100:
+        u["coin"] -= 100
+        u["life"] += 1
+        save_users(users)
+        bot.send_message(m.chat.id, "🧡 یک جان با موفقیت خریداری شد! ❤️")
+    else:
+        bot.send_message(m.chat.id, "❌ شما سکه کافی برای خرید جان ندارید.")
+
+@bot.message_handler(func=lambda m: m.text == "👤 پروفایل")
+def profile(m):
+    users = load_users()
+    u = users[str(m.chat.id)]
+    msg = f"""👤 نام: {u['name']}
+❤️ جان: {u['life']}
+💰 سکه: {u['coin']}
+⭐️ امتیاز: {u['score']}"""
+    bot.send_message(m.chat.id, msg)
+
+@bot.message_handler(func=lambda m: m.text == "🎁 پاداش روزانه")
+def daily_bonus(m):
+    users = load_users()
+    user_id = str(m.chat.id)
+    
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❌ خطا در یافتن اطلاعات کاربر. لطفاً با /start مجدداً شروع کنید.")
+        return
+    
+    user = users[user_id]
+    now = datetime.datetime.now()
+    
+    if "last_bonus" not in user or not user["last_bonus"]:
+        user["last_bonus"] = "2000-01-01 00:00:00"
+    
+    try:
+        last = datetime.datetime.strptime(user["last_bonus"], "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        last = datetime.datetime.min
+        user["last_bonus"] = "2000-01-01 00:00:00"
+    
+    delta = now - last
+    
+    if delta.total_seconds() >= 43200:
+        user["coin"] += 10
+        user["last_bonus"] = now.strftime("%Y-%m-%d %H:%M:%S")
+        save_users(users)
+        bot.send_message(m.chat.id, "🎉 ۱۰ سکه پاداش دریافت کردید!")
+    else:
+        remaining = 43200 - delta.total_seconds()
+        hours = int(remaining // 3600)
+        minutes = int((remaining % 3600) // 60)
+        bot.send_message(m.chat.id, f"⏳ باید {hours} ساعت و {minutes} دقیقه دیگر صبر کنید.")
+
+@bot.message_handler(func=lambda m: m.text == "🧑‍🤝‍🧑 دعوت دوستان")
+def invite(m):
+    link = f"https://t.me/{bot.get_me().username}?start={m.chat.id}"
+    bot.send_message(m.chat.id, f"📨 لینک دعوت شما:\n{link}\nهر دعوت = ۵۰ سکه")
+
+@bot.message_handler(func=lambda m: m.text == "🏆 برترین ها")
+def top_players(m):
+    users = load_users()
+    sorted_users = sorted(users.items(), key=lambda x: x[1]["score"], reverse=True)
+    text = "🏆 ۱۰ بازیکن برتر:\n"
+    for i, (uid, u) in enumerate(sorted_users[:10]):
+        text += f"{i+1}. {u['name']} - {u['score']} امتیاز\n"
+    bot.send_message(m.chat.id, text)
 
 @app.route(f"/{API_TOKEN}", methods=["POST"])
 def webhook():
