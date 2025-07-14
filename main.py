@@ -1059,49 +1059,27 @@ def handle_start(m):
 
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
-def start_game(m):
-    user_id = str(m.chat.id)
-    users = load_users()
-
-    if user_id not in users:
-        bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید. /start")
-        return
+def start_game(message):
+    user_id = message.from_user.id
+    user = get_user(user_id)
 
     if user["life"] <= 0:
-        bot.send_message(message.chat.id, "❌ جونت تموم شده!\nبرای ادامه از فروشگاه جون بخر 🛒")
-        return  # از تابع خارج شو، نذار بازی شروع بشه
-
-    # ادامه‌ی کد شروع بازی در صورتی که جون داشته باشه
-    user["step"] = 0
-    save_user(message.from_user.id, user)
-    send_question(message.chat.id, message.from_user.id)
-
-    user = users[user_id]
-    user.setdefault("step", 0)  # مقدار پیش‌فرض اگر وجود نداشته باشد
-    user.setdefault("life", 3)
-    user.setdefault("coin", 0)
-    user.setdefault("score", 0)
-
-    # ذخیره تغییرات اولیه
-    save_users(users)
-
-    # بارگذاری سوالات
-    with open(QUESTIONS_FILE, "r") as f:
-        questions = json.load(f)
-
-    # بررسی اگر کاربر تمام مراحل را گذرانده باشد
-    if user["step"] >= len(questions):
-        bot.send_message(m.chat.id, "🎉 شما تمام مراحل را کامل کرده‌اید! به زودی مراحل جدید اضافه خواهد شد.")
+        bot.send_message(message.chat.id, "❌ جونت تموم شده!\nبرای ادامه باید از فروشگاه جون بخری 🛒")
         return
 
-    # ارسال سوال از مرحله‌ای که کاربر قبلاً رسیده بود
-    q = questions[user["step"]]
-    markup = types.InlineKeyboardMarkup()
-    for i, opt in enumerate(q["options"]):
-        markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
+    # اگر کاربر در حال بازی قبلی بود، ادامه دهد از همون مرحله
+    if user.get("step", 0) > 0 and user.get("playing", False):
+        bot.send_message(message.chat.id, "📌 ادامه بازی از آخرین مرحله:")
+        send_question(message.chat.id, user_id)
+        return
 
-    bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
+    # شروع بازی جدید از مرحله اول
+    user["step"] = 0
+    user["playing"] = True
+    save_user(user_id, user)
 
+    bot.send_message(message.chat.id, "🧩 بازی شروع شد! آماده‌ای؟")
+    send_question(message.chat.id, user_id)
 def is_valid_answer(m):
     users = load_users()
     user_id = str(m.chat.id)
