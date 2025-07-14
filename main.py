@@ -1,36 +1,3 @@
-import os
-import json
-
-DATA_DIR = "/mnt/data"
-DATA_FILE = f"{DATA_DIR}/users.json"
-
-# ✅ ساخت پوشه اگر وجود نداشت
-os.makedirs(DATA_DIR, exist_ok=True)
-
-# 📥 لود فایل اگر وجود داشت، یا ساخت فایل جدید
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        users = json.load(f)
-else:
-    users = {}
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
-        
-import os
-import json
-
-DATA_FILE = "/mnt/data/users.json"
-
-# اگر فایل وجود داشت، لودش کن
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        users = json.load(f)
-else:
-    # در غیر این صورت فایل جدید بساز و users رو خالی نگه دار
-    users = {}
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
-        
 import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
@@ -47,7 +14,7 @@ TRON_ADDRESS = "TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb"
 
 app = Flask(__name__)
 
-DATA_FILE = "/mnt/data/users.json"
+DATA_FILE = "users.json"
 QUESTIONS_FILE = "questions.json"
 
 if not os.path.exists(DATA_FILE):
@@ -1014,10 +981,9 @@ if not os.path.exists(QUESTIONS_FILE):
 with open(QUESTIONS_FILE) as f:
     QUESTIONS = json.load(f)
 
-def save_user(user_id, user_data):
-    users[str(user_id)] = user_data
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
+def save_users(users):
+    with open(DATA_FILE, "w") as f:
+        json.dump(users, f)
 
 def load_users():
     with open(DATA_FILE) as f:
@@ -1345,8 +1311,9 @@ def block_if_no_name(m):
         if m.text != "/start":
             bot.send_message(m.chat.id, "❗️ لطفاً ابتدا نام خود را وارد کنید. /start")
 
-def get_user(user_id):
-    return users.get(str(user_id), None)
+def get_user_step(user_id):
+    users = load_users()
+    return users.get(str(user_id), {}).get("step", -1)
 
 def send_question(chat_id):
     users = load_users()
@@ -1512,14 +1479,6 @@ def start_game(m):
         markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
 
     bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
-
-def get_user(user_id):
-    return users.get(str(user_id), None)
-
-def save_user(user_id, user_data):
-    users[str(user_id)] = user_data
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False, indent=2)
             
 if __name__ == "__main__":
     Thread(target=run).start()
