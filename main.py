@@ -778,43 +778,46 @@ def handle_question_answer(call):
         return
 
     current_step = u.get("step", 0)
+
+    # بارگذاری سوالات
     with open(QUESTIONS_FILE, "r") as f:
         questions = json.load(f)
 
-    # جلوگیری از خطا اگر سوال تمام شده
+    # جلوگیری از خطا اگر سوالات تمام شده باشند
     if current_step >= len(questions):
-        bot.answer_callback_query(call.id, "✅ تمام سوالات را گذرانده‌اید!")
+        bot.answer_callback_query(call.id, "✅ تمام سوالات را قبلاً گذرانده‌اید.")
         return
 
     question = questions[current_step]
     selected_option = int(call.data.split("_")[1])
     correct = selected_option == question["answer"]
 
-    # پاسخ به کاربر
+    # پاسخ‌دهی و توضیح گزینه‌ها
     explanation_text = ""
     for idx, opt in enumerate(question["options"]):
         mark = "✅" if idx == question["answer"] else ("❌" if idx == selected_option else "▫️")
         explanation_text += f"{mark} {opt}\n— {question['explanations'].get(idx, '')}\n\n"
 
-    # آپدیت امتیاز، سکه و جان
+    # بروزرسانی آمار کاربر
     if correct:
-        u["coins"] += 10
         u["score"] += 20
+        u["coins"] += 10
     else:
         u["score"] += 5
-        u["hearts"] -= 1
+        u["hearts"] -= 1  # ❗️ کم کردن جان
 
     # مرحله بعدی
     u["step"] += 1
 
-    # ذخیره
+    # ذخیره در فایل
     data[user_id] = u
     with open(DATA_FILE, "w") as f:
         json.dump(data, f)
 
-    # ارسال پاسخ و سوال بعد
+    # نمایش نتیجه کاربر
     bot.edit_message_text(f"{explanation_text}", chat_id, call.message.message_id)
 
+    # سوال بعدی یا پایان بازی
     if u["step"] < len(questions):
         next_q = questions[u["step"]]
         markup = types.InlineKeyboardMarkup()
@@ -823,7 +826,7 @@ def handle_question_answer(call):
 
         bot.send_message(chat_id, f"{next_q['question']}", reply_markup=markup)
     else:
-        bot.send_message(chat_id, "🎉 تبریک! تمام مراحل را به پایان رساندی.")
+        bot.send_message(chat_id, "🎉 تبریک! تمام مراحل بازی را به پایان رساندی.")
             
 if __name__ == "__main__":
     Thread(target=run).start()
