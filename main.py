@@ -1379,7 +1379,6 @@ def handle_question_answer(call):
     chat_id = call.message.chat.id
     user_id = str(chat_id)
 
-    # بارگذاری اطلاعات کاربر و سوالات
     users = load_users()
     with open(QUESTIONS_FILE, "r") as f:
         questions = json.load(f)
@@ -1387,6 +1386,12 @@ def handle_question_answer(call):
     user = users.get(user_id)
     if not user:
         bot.answer_callback_query(call.id, "❌ خطا در یافتن اطلاعات کاربر.")
+        return
+
+    # اگر جان کاربر صفر است، اجازه پاسخ دادن ندهیم
+    if user.get("life", 0) <= 0:
+        bot.answer_callback_query(call.id, "💔 جان شما تمام شده! لطفاً از فروشگاه جان خریداری کنید.")
+        bot.send_message(chat_id, "💔 جان شما تمام شده! برای ادامه بازی لطفاً از فروشگاه جان خریداری کنید.", reply_markup=main_menu())
         return
 
     current_step = user.get("step", 0)
@@ -1402,7 +1407,7 @@ def handle_question_answer(call):
     explanation_text = ""
     for idx, opt in enumerate(question["options"]):
         mark = "✅" if idx == question["answer"] else ("❌" if idx == selected_option else "▫️")
-        explanation_text += f"{mark} {opt}\n— {question['explanations'].get(idx, '')}\n\n"
+        explanation_text += f"{mark} {opt}\n— {question['explanations'].get(str(idx), '')}\n\n"
 
     # بروزرسانی اطلاعات کاربر
     if correct:
@@ -1414,12 +1419,6 @@ def handle_question_answer(call):
         user["life"] -= 1
         result_message = "❌ پاسخ اشتباه! +۵ امتیاز و -۱ جان."
 
-    # افزایش مرحله فقط اگر کاربر هنوز جان دارد
-    if user["life"] > 0:
-        user["step"] += 1
-    else:
-        bot.send_message(chat_id, "💔 جان شما تمام شد! برای ادامه، جان خریداری کنید.", reply_markup=main_menu())
-
     # ذخیره تغییرات
     save_users(users)
 
@@ -1430,15 +1429,56 @@ def handle_question_answer(call):
         call.message.message_id
     )
 
-    # ارسال سوال بعدی اگر کاربر جان دارد و مرحله تمام نشده باشد
-    if user["life"] > 0 and user["step"] < len(questions):
+    # بررسی اگر جان کاربر تمام شده
+    if user["life"] <= 0:
+        bot.send_message(chat_id, "💔 جان شما تمام شد! برای ادامه بازی، لطفاً از فروشگاه جان خریداری کنید.", reply_markup=main_menu())
+        return
+
+    # ارسال سوال بعدی اگر مرحله تمام نشده باشد
+    user["step"] += 1
+    save_users(users)
+    
+    if user["step"] < len(questions):
         next_q = questions[user["step"]]
         markup = types.InlineKeyboardMarkup()
         for i, opt in enumerate(next_q["options"]):
             markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
         bot.send_message(chat_id, f"{next_q['question']}", reply_markup=markup)
-    elif user["step"] >= len(questions):
-        bot.send_message(chat_id, "🎉 تبریک! شما تمام مراحل را کامل کردید!")
+    else:
+        bot.send_message(chat_id, "🎉 تبریک! شما تمام مراحل را کامل کردید!", reply_markup=main_menu())
+
+@bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
+def start_game(m):
+    user_id = str(m.chat.id)
+    users = load_users()
+
+    if user_id not in users:
+        bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید. /start")
+        return
+
+    user = users[user_id]
+    
+    # بررسی اگر جان کاربر تمام شده
+    if user.get("life", 0) <= 0:
+        bot.send_message(m.chat.id, "💔 جان شما تمام شده! لطفاً از فروشگاه جان خریداری کنید.", reply_markup=main_menu())
+        return
+
+    # بارگذاری سوالات
+    with open(QUESTIONS_FILE, "r") as f:
+        questions = json.load(f)
+
+    # بررسی اگر کاربر تمام مراحل را گذرانده باشد
+    if user.get("step", 0) >= len(questions):
+        bot.send_message(m.chat.id, "🎉 شما تمام مراحل را کامل کرده‌اید! به زودی مراحل جدید اضافه خواهد شد.", reply_markup=main_menu())
+        return
+
+    # ارسال سوال از مرحله‌ای که کاربر قبلاً رسیده بود
+    q = questions[user["step"]]
+    markup = types.InlineKeyboardMarkup()
+    for i, opt in enumerate(q["options"]):
+        markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
+
+    bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
             
 if __name__ == "__main__":
     Thread(target=run).start()
