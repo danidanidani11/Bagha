@@ -14,7 +14,7 @@ TRON_ADDRESS = "TJ4xrwKJzKjk6FgKfuuqwah3Az5Ur22kJb"
 
 app = Flask(__name__)
 
-DATA_FILE = "users.json"
+DATA_FILE = "/mnt/data/users.json"
 QUESTIONS_FILE = "questions.json"
 
 if not os.path.exists(DATA_FILE):
