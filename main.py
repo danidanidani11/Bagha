@@ -1,3 +1,18 @@
+import os
+import json
+
+DATA_FILE = "/mnt/data/users.json"
+
+# اگر فایل وجود داشت، لودش کن
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        users = json.load(f)
+else:
+    # در غیر این صورت فایل جدید بساز و users رو خالی نگه دار
+    users = {}
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+        
 import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
