@@ -1063,23 +1063,36 @@ def start_game(message):
     user_id = message.from_user.id
     user = get_user(user_id)
 
+    # اگه هنوز داده‌ای براش وجود نداره
+    if not user:
+        user = {
+            "name": message.from_user.first_name,
+            "life": 3,
+            "coin": 0,
+            "score": 0,
+            "step": 0,
+            "playing": False
+        }
+
+    # اگر جان تموم شده بود
     if user["life"] <= 0:
-        bot.send_message(message.chat.id, "❌ جونت تموم شده!\nبرای ادامه باید از فروشگاه جون بخری 🛒")
+        bot.send_message(message.chat.id, "❌ جونت تموم شده!\nبرای ادامه از فروشگاه جان تهیه کن.")
         return
 
-    # اگر کاربر در حال بازی قبلی بود، ادامه دهد از همون مرحله
-    if user.get("step", 0) > 0 and user.get("playing", False):
-        bot.send_message(message.chat.id, "📌 ادامه بازی از آخرین مرحله:")
+    # اگر در حال بازی بوده، ادامه بده
+    if user.get("playing", False) and user.get("step", 0) < len(questions):
+        bot.send_message(message.chat.id, "📌 ادامه بازی از همان مرحله:")
         send_question(message.chat.id, user_id)
         return
 
-    # شروع بازی جدید از مرحله اول
+    # شروع بازی از اول
     user["step"] = 0
     user["playing"] = True
     save_user(user_id, user)
 
     bot.send_message(message.chat.id, "🧩 بازی شروع شد! آماده‌ای؟")
     send_question(message.chat.id, user_id)
+    
 def is_valid_answer(m):
     users = load_users()
     user_id = str(m.chat.id)
