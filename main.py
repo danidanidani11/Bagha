@@ -445,24 +445,43 @@ def handle_start(m):
 # 🎮 بازی
 @bot.message_handler(func=lambda m: m.text == "🎮 شروع بازی")
 def start_game(m):
-    users = load_users()
     user_id = str(m.chat.id)
-    
-    if user_id not in users:
-        bot.send_message(m.chat.id, "❌ کاربر یافت نشد. لطفاً /start را بزنید.")
+
+    # بارگذاری اطلاعات کاربر
+    with open(DATA_FILE, "r") as f:
+        data = json.load(f)
+
+    if user_id not in data:
+        bot.send_message(m.chat.id, "❗️ ابتدا باید ثبت‌نام کنید.")
         return
-        
-    user = users[user_id]
-    
-    if user["life"] <= 0:
-        bot.send_message(m.chat.id, "❌ شما جان ندارید! لطفاً از فروشگاه جان بخرید.")
+
+    u = data[user_id]
+    u.setdefault("step", 0)
+    u.setdefault("coins", 0)
+    u.setdefault("hearts", 3)
+    u.setdefault("score", 0)
+
+    # ذخیره تغییرات اولیه (در صورت نبود فیلد)
+    data[user_id] = u
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f)
+
+    # بارگذاری سوالات
+    with open(QUESTIONS_FILE, "r") as f:
+        questions = json.load(f)
+
+    if u["step"] >= len(questions):
+        bot.send_message(m.chat.id, "✅ تمام سوالات را قبلاً گذرانده‌اید.")
         return
-        
-    if user["step"] >= len(QUESTIONS):
-        bot.send_message(m.chat.id, "🎉 شما تمام مراحل را گذرانده‌اید!")
-        return
-        
-    send_question(m.chat.id)
+
+    q = questions[u["step"]]
+
+    # ساخت دکمه‌ها با callback_data
+    markup = types.InlineKeyboardMarkup()
+    for i, opt in enumerate(q["options"]):
+        markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
+
+    bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
 
 def is_valid_answer(m):
     users = load_users()
