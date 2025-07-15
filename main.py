@@ -1,43 +1,7 @@
-import json
-import os
-from pathlib import Path
-
-# مسیر مطمئن برای Render
-DATA_DIR = Path(os.getenv("DATA_DIR", "."))
-DATA_FILE = DATA_DIR / "user_data.json"
-
-def init_data():
-    if not DATA_FILE.exists():
-        DATA_FILE.write_text("{}")
-
-def save_data(user_id, data):
-    init_data()
-    all_data = json.loads(DATA_FILE.read_text())
-    all_data[str(user_id)] = data
-    DATA_FILE.write_text(json.dumps(all_data, indent=2))
-
-def get_data(user_id):
-    init_data()
-    return json.loads(DATA_FILE.read_text()).get(str(user_id))
-
-# تست توابع
-if __name__ == "__main__":
-    save_data("user123", {"name": "Ali", "age": 25})
-    print(get_data("user123"))
-    
 import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
 from threading import Thread
-from database import init_db, save_user, get_user
-
-# مقداردهی اولیه دیتابیس
-init_db()
-
-# مثال استفاده
-save_data("user123", {"name": "Ali", "age": 25})
-user_info = get_data("user123")
-print(user_info)
 
 API_TOKEN = '7459857250:AAHpb_NliuOiM7-cTmFSrospKdoKMnAFiew'
 bot = telebot.TeleBot(API_TOKEN)
@@ -1515,11 +1479,6 @@ def start_game(m):
         markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
 
     bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
-
-# جایگزین تمام دستورات مربوط به ذخیره داده با این:
-save_user(update.effective_user.id, data_dict)
-
-user_data = get_user(update.effective_user.id) or {}
             
 if __name__ == "__main__":
     Thread(target=run).start()
