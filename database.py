@@ -29,3 +29,7 @@ def get_user(user_id):
     result = cursor.fetchone()
     conn.close()
     return eval(result[0]) if result else None
+
+def backup_db():
+    import shutil
+    shutil.copy2(DB_PATH, DB_PATH.with_suffix('.backup.sqlite'))
