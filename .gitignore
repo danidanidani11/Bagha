@@ -1,4 +1,0 @@
-bagha_db.sqlite
-*.sqlite-journal
-venv/
-__pycache__/
