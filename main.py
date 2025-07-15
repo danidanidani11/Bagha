@@ -2,7 +2,10 @@ import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
 from threading import Thread
+from database import init_db, save_user, get_user
 
+# مقداردهی اولیه دیتابیس
+init_db()
 
 # مثال استفاده
 save_data("user123", {"name": "Ali", "age": 25})
