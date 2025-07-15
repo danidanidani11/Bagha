@@ -1,3 +1,30 @@
+import json
+import os
+from pathlib import Path
+
+# مسیر مطمئن برای Render
+DATA_DIR = Path(os.getenv("DATA_DIR", "."))
+DATA_FILE = DATA_DIR / "user_data.json"
+
+def init_data():
+    if not DATA_FILE.exists():
+        DATA_FILE.write_text("{}")
+
+def save_data(user_id, data):
+    init_data()
+    all_data = json.loads(DATA_FILE.read_text())
+    all_data[str(user_id)] = data
+    DATA_FILE.write_text(json.dumps(all_data, indent=2))
+
+def get_data(user_id):
+    init_data()
+    return json.loads(DATA_FILE.read_text()).get(str(user_id))
+
+# تست توابع
+if __name__ == "__main__":
+    save_data("user123", {"name": "Ali", "age": 25})
+    print(get_data("user123"))
+    
 import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
