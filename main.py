@@ -2,7 +2,7 @@ import telebot, json, os, datetime, random
 from flask import Flask, request
 from telebot import types
 from threading import Thread
-from database import save_data, get_data
+
 
 # مثال استفاده
 save_data("user123", {"name": "Ali", "age": 25})
