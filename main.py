@@ -1488,6 +1488,11 @@ def start_game(m):
         markup.add(types.InlineKeyboardButton(opt, callback_data=f"q_{i}"))
 
     bot.send_message(m.chat.id, f"{q['question']}", reply_markup=markup)
+
+# جایگزین تمام دستورات مربوط به ذخیره داده با این:
+save_user(update.effective_user.id, data_dict)
+
+user_data = get_user(update.effective_user.id) or {}
             
 if __name__ == "__main__":
     Thread(target=run).start()
